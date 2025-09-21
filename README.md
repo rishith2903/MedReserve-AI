@@ -1,10 +1,14 @@
 # 🏥 MedReserve — Frontend (React + Vite)
 
+[![CI](https://github.com/rishith2903/MedReserve-AI/actions/workflows/ci.yml/badge.svg)](https://github.com/rishith2903/MedReserve-AI/actions)
+
 See overall architecture diagram: [../docs/architecture.mmd](../docs/architecture.mmd)
 
 Modern, responsive UI for patients, doctors, and admins. JavaScript-only (no TypeScript).
 
 ## 🚀 Quickstart
+
+OS-specific quick reference: see the root README section “OS-specific instructions”.
 
 Windows (PowerShell)
 ```
