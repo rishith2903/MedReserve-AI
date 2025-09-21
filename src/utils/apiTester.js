@@ -1,10 +1,11 @@
+/* eslint-disable no-console */
 /**
  * API Integration Tester for MedReserve AI Frontend
  * Tests all API endpoints and validates real-time data integration
  */
 
-import { api } from '../services/api';
-import { realTimeDataService } from '../services/realTimeDataService';
+import api from '../services/api';
+import realTimeDataService from '../services/realTimeDataService';
 
 class APITester {
   constructor() {

@@ -1,9 +1,10 @@
+/* eslint-disable no-console */
+import { useEffect, useState } from 'react';
 /**
  * Real-Time Data Service
  * Handles real-time data fetching and updates across the application
  */
 
-import React from 'react';
 import { appointmentsAPI, doctorsAPI } from './api';
 
 class RealTimeService {
@@ -272,11 +273,11 @@ export default realTimeService;
 
 // Export hook for easy use in React components
 export const useRealTimeData = (dataType, refreshInterval = 30000) => {
-  const [data, setData] = React.useState(null);
-  const [loading, setLoading] = React.useState(true);
-  const [error, setError] = React.useState(null);
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  React.useEffect(() => {
+  useEffect(() => {
     const handleDataUpdate = (newData, updateError) => {
       if (updateError) {
         setError(updateError);

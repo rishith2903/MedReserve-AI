@@ -1,35 +1,45 @@
 /**
- * API Status Dashboard Component
+ * API Status Dashboard Component (MUI version)
  * Shows real-time status of all backend integrations
  */
 
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
-import { Button } from '../ui/button';
-import { Badge } from '../ui/badge';
-import { Progress } from '../ui/progress';
-import { 
-  CheckCircle, 
-  XCircle, 
-  AlertCircle, 
-  RefreshCw, 
-  Server, 
-  Database, 
-  MessageSquare,
-  Activity,
-  Clock,
+import { useState, useEffect } from 'react';
+import {
+  Box,
+  Card,
+  CardContent,
+  CardHeader,
+  Typography,
+  Button,
+  Chip,
+  Grid,
+  Paper,
+  LinearProgress,
+  Alert,
+  Skeleton,
+  Stack,
+} from '@mui/material';
+import {
+  CheckCircle,
+  Cancel,
+  Refresh,
   Wifi,
-  WifiOff
-} from 'lucide-react';
+  WifiOff,
+  Storage,
+  Dns,
+  Chat,
+  Insights,
+  AccessTime,
+} from '@mui/icons-material';
 import { apiTester } from '../../utils/apiTester';
 
 const APIStatusDashboard = () => {
   const [testResults, setTestResults] = useState(null);
   const [isRunning, setIsRunning] = useState(false);
   const [lastUpdate, setLastUpdate] = useState(null);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    // Check if tests were already run
     if (window.apiTestResults) {
       setTestResults(window.apiTestResults);
       setLastUpdate(new Date());
@@ -38,284 +48,212 @@ const APIStatusDashboard = () => {
 
   const runTests = async () => {
     setIsRunning(true);
+    setError(null);
     try {
-      const results = await apiTester.runAllTests();
+      await apiTester.runAllTests();
       setTestResults(window.apiTestResults);
       setLastUpdate(new Date());
-    } catch (error) {
-      console.error('Failed to run API tests:', error);
+    } catch (e) {
+      console.error('Failed to run API tests:', e);
+      setError('Failed to run API tests');
     } finally {
       setIsRunning(false);
     }
   };
 
-  const getStatusIcon = (status) => {
-    switch (status) {
-      case 'passed':
-        return <CheckCircle className="h-5 w-5 text-green-500" />;
-      case 'partial':
-        return <AlertCircle className="h-5 w-5 text-yellow-500" />;
-      case 'failed':
-        return <XCircle className="h-5 w-5 text-red-500" />;
-      default:
-        return <Clock className="h-5 w-5 text-gray-400" />;
-    }
-  };
-
-  const getStatusBadge = (status) => {
-    const variants = {
-      passed: 'bg-green-100 text-green-800',
-      partial: 'bg-yellow-100 text-yellow-800',
-      failed: 'bg-red-100 text-red-800',
-      pending: 'bg-gray-100 text-gray-800'
-    };
-
-    return (
-      <Badge className={variants[status] || variants.pending}>
-        {status.toUpperCase()}
-      </Badge>
-    );
-  };
-
-  const getCategoryIcon = (category) => {
-    const icons = {
-      authentication: <Server className="h-4 w-4" />,
-      dashboard: <Activity className="h-4 w-4" />,
-      doctors: <Server className="h-4 w-4" />,
-      appointments: <Database className="h-4 w-4" />,
-      prescriptions: <Database className="h-4 w-4" />,
-      reports: <Database className="h-4 w-4" />,
-      chatbot: <MessageSquare className="h-4 w-4" />
-    };
-    return icons[category] || <Server className="h-4 w-4" />;
-  };
-
   const getOverallStatus = () => {
     if (!testResults) return 'pending';
-    
     const { summary } = testResults;
+    if (!summary) return 'pending';
     if (summary.passedRequired === summary.required) return 'operational';
     if (summary.passedRequired > 0) return 'degraded';
     return 'outage';
   };
 
-  const getOverallStatusColor = () => {
-    const status = getOverallStatus();
+  const overallStatusLabel = () => {
+    const s = getOverallStatus();
+    if (s === 'operational') return 'Operational';
+    if (s === 'degraded') return 'Degraded';
+    if (s === 'outage') return 'Outage';
+    return 'Pending';
+  };
+
+  const statusChipColor = (status) => {
     switch (status) {
+      case 'passed':
       case 'operational':
-        return 'text-green-600 bg-green-50 border-green-200';
+        return 'success';
+      case 'partial':
       case 'degraded':
-        return 'text-yellow-600 bg-yellow-50 border-yellow-200';
+        return 'warning';
+      case 'failed':
       case 'outage':
-        return 'text-red-600 bg-red-50 border-red-200';
+        return 'error';
       default:
-        return 'text-gray-600 bg-gray-50 border-gray-200';
+        return 'default';
     }
   };
 
+  const categoryIcon = (category) => {
+    const map = {
+      authentication: <Dns fontSize="small" />,
+      dashboard: <Insights fontSize="small" />,
+      doctors: <Dns fontSize="small" />,
+      appointments: <Storage fontSize="small" />,
+      prescriptions: <Storage fontSize="small" />,
+      reports: <Storage fontSize="small" />,
+      chatbot: <Chat fontSize="small" />,
+    };
+    return map[category] || <Dns fontSize="small" />;
+  };
+
+  const uptimePercent = () => {
+    if (!testResults?.summary) return 0;
+    return Math.round((testResults.summary.passedRequired / testResults.summary.required) * 100);
+  };
+
   return (
-    <div className="space-y-6">
-      {/* Overall Status */}
-      <Card className={`border-2 ${getOverallStatusColor()}`}>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2">
-              {getOverallStatus() === 'operational' ? (
-                <Wifi className="h-6 w-6" />
-              ) : (
-                <WifiOff className="h-6 w-6" />
-              )}
-              MedReserve AI System Status
-            </CardTitle>
-            <Button 
-              onClick={runTests} 
-              disabled={isRunning}
-              variant="outline"
-              size="sm"
-            >
-              {isRunning ? (
-                <RefreshCw className="h-4 w-4 animate-spin mr-2" />
-              ) : (
-                <RefreshCw className="h-4 w-4 mr-2" />
-              )}
-              {isRunning ? 'Testing...' : 'Run Tests'}
+    <Stack spacing={3}>
+      <Card>
+        <CardHeader
+          title={
+            <Stack direction="row" spacing={1} alignItems="center">
+              {getOverallStatus() === 'operational' ? <Wifi color="success" /> : <WifiOff color={getOverallStatus()==='outage' ? 'error' : 'warning'} />}
+              <Typography variant="h6">MedReserve AI System Status</Typography>
+            </Stack>
+          }
+          action={
+            <Button onClick={runTests} disabled={isRunning} variant="outlined" size="small" startIcon={<Refresh />}>
+              {isRunning ? 'Testing…' : 'Run Tests'}
             </Button>
-          </div>
-        </CardHeader>
+          }
+        />
         <CardContent>
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h3 className="text-lg font-semibold capitalize">
-                {getOverallStatus().replace('_', ' ')}
-              </h3>
-              <p className="text-sm text-gray-600">
-                {testResults ? (
-                  `${testResults.summary.passedRequired}/${testResults.summary.required} critical services operational`
-                ) : (
-                  'Click "Run Tests" to check system status'
-                )}
-              </p>
-            </div>
-            {testResults && (
-              <div className="text-right">
-                <div className="text-2xl font-bold">
-                  {Math.round((testResults.summary.passedRequired / testResults.summary.required) * 100)}%
-                </div>
-                <div className="text-sm text-gray-600">Uptime</div>
-              </div>
-            )}
-          </div>
-          
-          {testResults && (
-            <Progress 
-              value={(testResults.summary.passedRequired / testResults.summary.required) * 100} 
-              className="h-2"
-            />
+          {error && (
+            <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>
           )}
-          
+          <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
+            <Box>
+              <Typography variant="subtitle1" sx={{ textTransform: 'capitalize' }}>
+                {overallStatusLabel()}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                {testResults ? `${testResults.summary.passedRequired}/${testResults.summary.required} critical services operational` : 'Click &quot;Run Tests&quot; to check system status'}
+              </Typography>
+            </Box>
+            {testResults && (
+              <Box textAlign="right">
+                <Typography variant="h5" fontWeight={700}>{uptimePercent()}%</Typography>
+                <Typography variant="caption" color="text.secondary">Uptime</Typography>
+              </Box>
+            )}
+          </Stack>
+          {testResults ? (
+            <LinearProgress variant="determinate" value={uptimePercent()} sx={{ height: 6, borderRadius: 3 }} />
+          ) : (
+            <Skeleton variant="rectangular" height={6} />
+          )}
           {lastUpdate && (
-            <p className="text-xs text-gray-500 mt-2">
+            <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
               Last updated: {lastUpdate.toLocaleString()}
-            </p>
+            </Typography>
           )}
         </CardContent>
       </Card>
 
-      {/* Service Status Grid */}
       {testResults && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <Grid container spacing={2}>
           {Object.entries(testResults.details).map(([category, result]) => (
-            <Card key={category} className="hover:shadow-md transition-shadow">
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    {getCategoryIcon(category)}
-                    <CardTitle className="text-sm capitalize">
+            <Grid item xs={12} md={6} lg={4} key={category}>
+              <Paper sx={{ p: 2 }}>
+                <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
+                  <Stack direction="row" spacing={1} alignItems="center">
+                    {categoryIcon(category)}
+                    <Typography variant="subtitle2" sx={{ textTransform: 'capitalize' }}>
                       {category.replace('_', ' ')}
-                    </CardTitle>
-                  </div>
-                  {getStatusIcon(result.status)}
-                </div>
-              </CardHeader>
-              <CardContent className="pt-0">
-                <div className="space-y-2">
-                  {getStatusBadge(result.status)}
-                  
-                  {result.tests && (
-                    <div className="space-y-1">
-                      {result.tests.map((test, index) => (
-                        <div key={index} className="flex items-center justify-between text-xs">
-                          <span className={`flex items-center gap-1 ${
-                            test.passed ? 'text-green-600' : 'text-red-600'
-                          }`}>
-                            {test.passed ? (
-                              <CheckCircle className="h-3 w-3" />
-                            ) : (
-                              <XCircle className="h-3 w-3" />
-                            )}
-                            {test.name}
-                          </span>
-                          <span className="text-gray-500">
-                            {test.responseTime}ms
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  
-                  {result.error && (
-                    <div className="text-xs text-red-600 bg-red-50 p-2 rounded">
-                      {result.error}
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+                    </Typography>
+                  </Stack>
+                  <Chip size="small" label={(result.status || 'pending').toUpperCase()} color={statusChipColor(result.status)} />
+                </Stack>
+
+                <Stack spacing={0.75}>
+                  {result.tests?.map((test, idx) => (
+                    <Stack key={idx} direction="row" justifyContent="space-between" alignItems="center">
+                      <Stack direction="row" spacing={1} alignItems="center">
+                        {test.passed ? <CheckCircle color="success" fontSize="small" /> : <Cancel color="error" fontSize="small" />}
+                        <Typography variant="caption" color={test.passed ? 'success.main' : 'error.main'}>{test.name}</Typography>
+                      </Stack>
+                      <Stack direction="row" spacing={0.5} alignItems="center">
+                        <AccessTime fontSize="inherit" />
+                        <Typography variant="caption" color="text.secondary">{test.responseTime}ms</Typography>
+                      </Stack>
+                    </Stack>
+                  ))}
+                </Stack>
+
+                {result.error && (
+                  <Alert severity="error" sx={{ mt: 1 }} variant="outlined">{result.error}</Alert>
+                )}
+              </Paper>
+            </Grid>
           ))}
-        </div>
+        </Grid>
       )}
 
-      {/* Integration Status */}
       <Card>
-        <CardHeader>
-          <CardTitle>Integration Status</CardTitle>
-        </CardHeader>
+        <CardHeader title="Integration Status" />
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <h4 className="font-semibold text-sm">Backend Services</h4>
-              <div className="space-y-1 text-sm">
-                <div className="flex justify-between">
-                  <span>Spring Boot API</span>
-                  <Badge variant="outline" className="text-green-600">
-                    {import.meta.env.VITE_API_BASE_URL ? 'Configured' : 'Not Set'}
-                  </Badge>
-                </div>
-                <div className="flex justify-between">
-                  <span>ML Service</span>
-                  <Badge variant="outline" className="text-green-600">
-                    {import.meta.env.VITE_ML_SERVICE_URL ? 'Configured' : 'Not Set'}
-                  </Badge>
-                </div>
-                <div className="flex justify-between">
-                  <span>Chatbot Service</span>
-                  <Badge variant="outline" className="text-green-600">
-                    {import.meta.env.VITE_CHATBOT_SERVICE_URL ? 'Configured' : 'Not Set'}
-                  </Badge>
-                </div>
-              </div>
-            </div>
-            
-            <div className="space-y-2">
-              <h4 className="font-semibold text-sm">Real-time Features</h4>
-              <div className="space-y-1 text-sm">
-                <div className="flex justify-between">
-                  <span>WebSocket</span>
-                  <Badge variant="outline" className="text-green-600">
-                    {import.meta.env.VITE_WEBSOCKET_URL ? 'Configured' : 'Not Set'}
-                  </Badge>
-                </div>
-                <div className="flex justify-between">
-                  <span>Auto-refresh</span>
-                  <Badge variant="outline" className="text-green-600">
-                    {import.meta.env.VITE_ENABLE_REAL_TIME_UPDATES === 'true' ? 'Enabled' : 'Disabled'}
-                  </Badge>
-                </div>
-                <div className="flex justify-between">
-                  <span>Fallback Data</span>
-                  <Badge variant="outline" className="text-blue-600">
-                    Active
-                  </Badge>
-                </div>
-              </div>
-            </div>
-          </div>
+          <Grid container spacing={2}>
+            <Grid item xs={12} md={6}>
+              <Stack spacing={1}>
+                <Typography variant="subtitle2">Backend Services</Typography>
+                <Stack direction="row" justifyContent="space-between" alignItems="center">
+                  <Typography variant="body2">Spring Boot API</Typography>
+                  <Chip variant="outlined" color={import.meta.env.VITE_API_BASE_URL ? 'success' : 'default'} size="small" label={import.meta.env.VITE_API_BASE_URL ? 'Configured' : 'Not Set'} />
+                </Stack>
+                <Stack direction="row" justifyContent="space-between" alignItems="center">
+                  <Typography variant="body2">ML Service</Typography>
+                  <Chip variant="outlined" color={import.meta.env.VITE_ML_SERVICE_URL ? 'success' : 'default'} size="small" label={import.meta.env.VITE_ML_SERVICE_URL ? 'Configured' : 'Not Set'} />
+                </Stack>
+                <Stack direction="row" justifyContent="space-between" alignItems="center">
+                  <Typography variant="body2">Chatbot Service</Typography>
+                  <Chip variant="outlined" color={import.meta.env.VITE_CHATBOT_SERVICE_URL ? 'success' : 'default'} size="small" label={import.meta.env.VITE_CHATBOT_SERVICE_URL ? 'Configured' : 'Not Set'} />
+                </Stack>
+              </Stack>
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <Stack spacing={1}>
+                <Typography variant="subtitle2">Real-time Features</Typography>
+                <Stack direction="row" justifyContent="space-between" alignItems="center">
+                  <Typography variant="body2">WebSocket</Typography>
+                  <Chip variant="outlined" color={import.meta.env.VITE_WEBSOCKET_URL ? 'success' : 'default'} size="small" label={import.meta.env.VITE_WEBSOCKET_URL ? 'Configured' : 'Not Set'} />
+                </Stack>
+                <Stack direction="row" justifyContent="space-between" alignItems="center">
+                  <Typography variant="body2">Auto-refresh</Typography>
+                  <Chip variant="outlined" color={import.meta.env.VITE_ENABLE_REAL_TIME_UPDATES === 'true' ? 'success' : 'default'} size="small" label={import.meta.env.VITE_ENABLE_REAL_TIME_UPDATES === 'true' ? 'Enabled' : 'Disabled'} />
+                </Stack>
+                <Stack direction="row" justifyContent="space-between" alignItems="center">
+                  <Typography variant="body2">Fallback Data</Typography>
+                  <Chip variant="outlined" color="info" size="small" label="Active" />
+                </Stack>
+              </Stack>
+            </Grid>
+          </Grid>
         </CardContent>
       </Card>
 
-      {/* Instructions */}
       <Card>
-        <CardHeader>
-          <CardTitle>Testing Instructions</CardTitle>
-        </CardHeader>
+        <CardHeader title="Testing Instructions" />
         <CardContent>
-          <div className="space-y-2 text-sm">
-            <p>
-              <strong>Automatic Testing:</strong> Add <code>?test-api</code> to the URL to run tests automatically.
-            </p>
-            <p>
-              <strong>Manual Testing:</strong> Click "Run Tests" to check all API endpoints.
-            </p>
-            <p>
-              <strong>Fallback Mode:</strong> When APIs are unavailable, the app uses enhanced demo data.
-            </p>
-            <p>
-              <strong>Real-time Updates:</strong> Data refreshes automatically every 60 seconds when APIs are available.
-            </p>
-          </div>
+          <Stack spacing={1}>
+            <Typography variant="body2"><strong>Automatic Testing:</strong> Add <code>?test-api</code> to the URL to run tests automatically.</Typography>
+            <Typography variant="body2"><strong>Manual Testing:</strong> Click &quot;Run Tests&quot; to check all API endpoints.</Typography>
+            <Typography variant="body2"><strong>Fallback Mode:</strong> When APIs are unavailable, the app uses enhanced demo data.</Typography>
+            <Typography variant="body2"><strong>Real-time Updates:</strong> Data refreshes automatically every 60 seconds when APIs are available.</Typography>
+          </Stack>
         </CardContent>
       </Card>
-    </div>
+    </Stack>
   );
 };
 

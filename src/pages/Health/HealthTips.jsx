@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+/* eslint-disable no-console */
+import { useState, useEffect } from 'react';
 import {
   Box,
   Typography,

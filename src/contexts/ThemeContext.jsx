@@ -1,6 +1,6 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { createTheme, ThemeProvider as MuiThemeProvider } from '@mui/material/styles';
-import { CssBaseline } from '@mui/material';
+import { createContext, useContext, useState, useEffect } from 'react';
+import { createTheme, ThemeProvider as MuiThemeProvider, responsiveFontSizes } from '@mui/material/styles';
+import { CssBaseline, alpha } from '@mui/material';
 
 const ThemeContext = createContext(undefined);
 
@@ -26,80 +26,82 @@ export const ThemeProvider = ({ children }) => {
     setIsDarkMode(prev => !prev);
   };
 
-  const theme = createTheme({
+  let theme = createTheme({
     palette: {
       mode: isDarkMode ? 'dark' : 'light',
       primary: {
-        main: '#2196f3',
-        light: '#64b5f6',
-        dark: '#1976d2',
+        main: isDarkMode ? '#90CAF9' : '#1565C0',
       },
       secondary: {
-        main: '#f50057',
-        light: '#ff5983',
-        dark: '#c51162',
+        main: isDarkMode ? '#D1C4E9' : '#7B1FA2',
       },
       background: {
-        default: isDarkMode ? '#121212' : '#f5f5f5',
-        paper: isDarkMode ? '#1e1e1e' : '#ffffff',
+        default: isDarkMode ? '#0F1115' : '#F7F7F9',
+        paper: isDarkMode ? '#121417' : '#FFFFFF',
       },
       text: {
-        primary: isDarkMode ? '#ffffff' : '#333333',
-        secondary: isDarkMode ? '#b0b0b0' : '#666666',
+        primary: isDarkMode ? '#EDEFF2' : '#1B1B1F',
+        secondary: isDarkMode ? '#A9AFB9' : '#5A5A67',
       },
+      divider: isDarkMode ? '#2B2F36' : '#E5E7EB',
+    },
+    shape: {
+      borderRadius: 10,
     },
     typography: {
       fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
-      h1: {
-        fontSize: '2.5rem',
-        fontWeight: 600,
-      },
-      h2: {
-        fontSize: '2rem',
-        fontWeight: 600,
-      },
-      h3: {
-        fontSize: '1.75rem',
-        fontWeight: 600,
-      },
-      h4: {
-        fontSize: '1.5rem',
-        fontWeight: 600,
-      },
-      h5: {
-        fontSize: '1.25rem',
-        fontWeight: 600,
-      },
-      h6: {
-        fontSize: '1rem',
-        fontWeight: 600,
-      },
-      body1: {
-        fontSize: '1rem',
-        lineHeight: 1.6,
-      },
-      body2: {
-        fontSize: '0.875rem',
-        lineHeight: 1.6,
-      },
+      h1: { fontWeight: 600 },
+      h2: { fontWeight: 600 },
+      h3: { fontWeight: 600 },
+      h4: { fontWeight: 600 },
+      h5: { fontWeight: 600 },
+      h6: { fontWeight: 600 },
+      body1: { lineHeight: 1.6 },
+      body2: { lineHeight: 1.6 },
     },
     components: {
+      MuiAppBar: {
+        styleOverrides: {
+          root: {
+            boxShadow: 'none',
+            backgroundImage: 'none',
+          },
+        },
+      },
+      MuiPaper: {
+        defaultProps: { elevation: 0 },
+        styleOverrides: {
+          root: {
+            backgroundImage: 'none',
+          },
+        },
+      },
+      MuiCard: {
+        defaultProps: { elevation: 0 },
+        styleOverrides: {
+          root: {
+            borderRadius: 10,
+            border: `1px solid ${isDarkMode ? '#2B2F36' : '#E5E7EB'}`,
+          },
+        },
+      },
       MuiButton: {
         styleOverrides: {
           root: {
             textTransform: 'none',
             borderRadius: 8,
             padding: '8px 16px',
+            '&:focus-visible': {
+              outline: `2px solid ${isDarkMode ? '#90CAF9' : '#1565C0'}`,
+              outlineOffset: 2,
+            },
           },
         },
       },
-      MuiCard: {
+      MuiChip: {
         styleOverrides: {
           root: {
-            borderRadius: 12,
-            boxShadow: isDarkMode 
-              ? '0 4px 6px rgba(0, 0, 0, 0.3)' 
-              : '0 4px 6px rgba(0, 0, 0, 0.1)',
+            fontWeight: 600,
           },
         },
       },
@@ -112,8 +114,31 @@ export const ThemeProvider = ({ children }) => {
           },
         },
       },
+      MuiDrawer: {
+        styleOverrides: {
+          paper: {
+            borderRight: `1px solid ${isDarkMode ? '#2B2F36' : '#E5E7EB'}`,
+          },
+        },
+      },
+      MuiListItemButton: {
+        styleOverrides: {
+          root: {
+            '&.Mui-selected': {
+              backgroundColor: alpha(isDarkMode ? '#90CAF9' : '#1565C0', 0.12),
+            },
+          },
+        },
+      },
+      MuiTooltip: {
+        defaultProps: {
+          arrow: true,
+        },
+      },
     },
   });
+
+  theme = responsiveFontSizes(theme);
 
   const value = {
     isDarkMode,

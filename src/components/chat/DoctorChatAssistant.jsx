@@ -3,8 +3,9 @@
  * Provides AI assistance for doctors with clinical workflow support
  */
 
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
+/* eslint-disable react/prop-types */
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Badge } from '../ui/badge';
@@ -214,7 +215,7 @@ What would you like to do today?`,
         className="flex items-center gap-2"
       >
         <Calendar className="h-4 w-4" />
-        Today's Schedule
+        Today&apos;s Schedule
       </Button>
       <Button
         variant="outline"
@@ -463,7 +464,7 @@ What would you like to do today?`,
                           className="w-full justify-start text-xs"
                           onClick={() => sendMessage('Who has appointments this week?')}
                         >
-                          This week's appointments
+                          This week&apos;s appointments
                         </Button>
                         <Button
                           variant="outline"

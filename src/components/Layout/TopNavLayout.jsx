@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import {
   AppBar,
@@ -30,12 +30,12 @@ import {
   Notifications,
   Description,
   Medication,
-  Menu as MenuIcon,
   CloudUpload,
   MonitorHeart,
   Security,
   DarkMode,
   LightMode,
+  MoreVert,
 } from '@mui/icons-material';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme as useCustomTheme } from '../../contexts/ThemeContext';
@@ -51,7 +51,7 @@ const TopNavLayout = () => {
   
   const [anchorEl, setAnchorEl] = useState(null);
   const [notificationAnchor, setNotificationAnchor] = useState(null);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [navMenuAnchor, setNavMenuAnchor] = useState(null);
 
   // Auto logout hook
   useAutoLogout();
@@ -70,6 +70,14 @@ const TopNavLayout = () => {
 
   const handleNotificationMenuClose = () => {
     setNotificationAnchor(null);
+  };
+
+  const handleNavMenuOpen = (event) => {
+    setNavMenuAnchor(event.currentTarget);
+  };
+
+  const handleNavMenuClose = () => {
+    setNavMenuAnchor(null);
   };
 
   const handleLogout = () => {
@@ -136,10 +144,11 @@ const TopNavLayout = () => {
   const navigationItems = getNavigationItems();
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-      {/* Top Navigation Bar */}
-      <AppBar position="sticky" elevation={1}>
-        <Toolbar>
+    <Box sx={{ display: 'flex', minHeight: '100vh' }}>
+      <Box sx={{ flexGrow: 1 }}>
+        {/* Top Navigation Bar */}
+        <AppBar position="sticky" elevation={0} sx={{ zIndex: (t) => t.zIndex.drawer + 1, borderBottom: (t) => `1px solid ${t.palette.divider}`, bgcolor: 'background.paper', color: 'text.primary' }}>
+          <Toolbar>
           {/* Logo and Title */}
           <Box sx={{ display: 'flex', alignItems: 'center', flexGrow: 1 }}>
             <LocalHospital sx={{ mr: 2, color: 'white' }} />
@@ -150,7 +159,7 @@ const TopNavLayout = () => {
 
           {/* Desktop Navigation */}
           {!isMobile && (
-            <Box sx={{ display: 'flex', gap: 1, mr: 2 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mr: 2 }}>
               {navigationItems.slice(0, 6).map((item) => (
                 <Button
                   key={item.path}
@@ -171,11 +180,23 @@ const TopNavLayout = () => {
                   </Typography>
                 </Button>
               ))}
+              {navigationItems.length > 6 && (
+                <IconButton color="inherit" onClick={handleNavMenuOpen} aria-label="Open more navigation">
+                  <MoreVert />
+                </IconButton>
+              )}
             </Box>
           )}
 
           {/* Right side icons */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            {/* Mobile Navigation Menu Button */}
+            {isMobile && (
+              <IconButton color="inherit" onClick={handleNavMenuOpen} aria-label="Open navigation menu">
+                <MoreVert />
+              </IconButton>
+            )}
+
             {/* Theme Toggle */}
             <IconButton color="inherit" onClick={toggleDarkMode}>
               {isDarkMode ? <LightMode /> : <DarkMode />}
@@ -188,12 +209,6 @@ const TopNavLayout = () => {
               </Badge>
             </IconButton>
 
-            {/* Mobile Menu Button */}
-            {isMobile && (
-              <IconButton color="inherit" onClick={() => setMobileMenuOpen(true)}>
-                <MenuIcon />
-              </IconButton>
-            )}
 
             {/* Profile Avatar */}
             <IconButton onClick={handleProfileMenuOpen} sx={{ p: 0, ml: 1 }}>
@@ -207,10 +222,10 @@ const TopNavLayout = () => {
             </IconButton>
           </Box>
         </Toolbar>
-      </AppBar>
+        </AppBar>
 
-      {/* Profile Menu */}
-      <Menu
+        {/* Profile Menu */}
+        <Menu
         anchorEl={anchorEl}
         open={Boolean(anchorEl)}
         onClose={handleProfileMenuClose}
@@ -227,37 +242,62 @@ const TopNavLayout = () => {
         </MenuItem>
       </Menu>
 
-      {/* Notification Menu */}
-      <Menu
-        anchorEl={notificationAnchor}
-        open={Boolean(notificationAnchor)}
-        onClose={handleNotificationMenuClose}
-      >
-        <MenuItem>
-          <Typography variant="body2">No new notifications</Typography>
-        </MenuItem>
-      </Menu>
-
-      {/* Main Content */}
-      <Container maxWidth="xl" sx={{ flexGrow: 1, py: 3 }}>
-        <Outlet />
-      </Container>
-
-      {/* Mobile Chat Fab */}
-      {isMobile && (
-        <Fab
-          color="primary"
-          sx={{
-            position: 'fixed',
-            bottom: 16,
-            right: 16,
-            zIndex: 1000,
-          }}
-          onClick={() => navigate('/chatbot')}
+        {/* Notification Menu */}
+        <Menu
+          anchorEl={notificationAnchor}
+          open={Boolean(notificationAnchor)}
+          onClose={handleNotificationMenuClose}
         >
-          <Chat />
-        </Fab>
-      )}
+          <MenuItem>
+            <Typography variant="body2">No new notifications</Typography>
+          </MenuItem>
+        </Menu>
+
+        {/* Navigation Menu (mobile and overflow on desktop) */}
+        <Menu
+          anchorEl={navMenuAnchor}
+          open={Boolean(navMenuAnchor)}
+          onClose={handleNavMenuClose}
+        >
+          {navigationItems.map((item) => (
+            <MenuItem
+              key={item.path}
+              selected={location.pathname === item.path}
+              onClick={() => {
+                handleNavMenuClose();
+                navigate(item.path);
+              }}
+            >
+              {item.icon}
+              <Typography variant="body2" sx={{ ml: item.icon ? 2 : 0 }}>
+                {item.label}
+              </Typography>
+            </MenuItem>
+          ))}
+        </Menu>
+
+        {/* Main Content */}
+        <Toolbar />
+        <Container maxWidth="xl" sx={{ flexGrow: 1, py: 3 }}>
+          <Outlet />
+        </Container>
+
+        {/* Mobile Chat Fab */}
+        {isMobile && (
+          <Fab
+            color="primary"
+            sx={{
+              position: 'fixed',
+              bottom: 16,
+              right: 16,
+              zIndex: 1000,
+            }}
+            onClick={() => navigate('/chatbot')}
+          >
+            <Chat />
+          </Fab>
+        )}
+      </Box>
     </Box>
   );
 };

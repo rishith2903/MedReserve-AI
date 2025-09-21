@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+/* eslint-disable no-console */
+import { useState, useEffect } from 'react';
 import {
   FormControl,
   InputLabel,
@@ -58,12 +59,6 @@ const ChatbotLanguageSelector = () => {
       messenger.setAttribute('language-code', newLanguage);
       
       // Optional: Send a message to reset the conversation in the new language
-      const welcomeMessages = {
-        en: 'Hello! I can help you with MedReserve services.',
-        hi: 'नमस्ते! मैं MedReserve सेवाओं में आपकी सहायता कर सकता हूं।',
-        te: 'నమస్కారం! నేను MedReserve సేవలలో మీకు సహాయం చేయగలను.'
-      };
-
       // Show language change notification
       console.log(`🌐 Chatbot language changed to: ${languages.find(l => l.code === newLanguage)?.name}`);
     }

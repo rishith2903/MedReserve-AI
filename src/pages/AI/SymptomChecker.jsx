@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Box,
   Card,
@@ -153,12 +153,12 @@ const SymptomChecker = () => {
   return (
     <Box sx={{ p: 3 }}>
       {/* Header */}
-      <Box sx={{ mb: 4, textAlign: 'center' }}>
-        <Psychology sx={{ fontSize: 48, color: 'primary.main', mb: 2 }} />
-        <Typography variant="h4" gutterBottom>
+      <Paper sx={{ mb: 4, p: 3, textAlign: 'center' }}>
+        <Psychology sx={{ fontSize: 40, color: 'primary.main', mb: 1 }} />
+        <Typography variant="h6" gutterBottom>
           AI Disease Prediction
         </Typography>
-        <Typography variant="subtitle1" color="text.secondary">
+        <Typography variant="body2" color="text.secondary">
           Get AI-powered disease predictions from your symptom descriptions using advanced ML and DL models
         </Typography>
 
@@ -171,7 +171,7 @@ const SymptomChecker = () => {
             {serviceHealth.message}
           </Alert>
         )}
-      </Box>
+      </Paper>
 
       <Grid container spacing={3}>
         {/* Input Section */}

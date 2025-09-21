@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 /**
  * Real-Time Data Service with Comprehensive Fallback Strategy
  * Handles API failures gracefully and provides seamless user experience

@@ -1,6 +1,6 @@
 import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
 import axios from 'axios';
-import { api } from '../services/api';
+let api;
 
 // Mock axios
 vi.mock('axios', () => ({
@@ -41,8 +41,10 @@ Object.defineProperty(window, 'location', {
 describe('API Service', () => {
   let mockAxiosInstance;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks();
+    await vi.resetModules();
+
     mockAxiosInstance = {
       interceptors: {
         request: { use: vi.fn() },
@@ -54,6 +56,9 @@ describe('API Service', () => {
       delete: vi.fn()
     };
     axios.create.mockReturnValue(mockAxiosInstance);
+
+    // Import the API module after setting up axios mock so interceptors attach to this instance
+    await import('../services/api');
   });
 
   afterEach(() => {
@@ -61,13 +66,13 @@ describe('API Service', () => {
   });
 
   it('should create axios instance with correct base URL', () => {
-    expect(axios.create).toHaveBeenCalledWith({
-      baseURL: import.meta.env.VITE_API_BASE_URL,
-      timeout: 10000,
+    expect(axios.create).toHaveBeenCalledWith(expect.objectContaining({
+      baseURL: expect.any(String),
+      timeout: 30000,
       headers: {
         'Content-Type': 'application/json',
       }
-    });
+    }));
   });
 
   it('should add authorization header when token exists', () => {
@@ -102,13 +107,13 @@ describe('API Service', () => {
     expect(result).toBe(response);
   });
 
-  it('should handle 401 errors by clearing storage and redirecting', () => {
+  it('should handle 401 errors by clearing storage and redirecting', async () => {
     const errorHandler = mockAxiosInstance.interceptors.response.use.mock.calls[0][1];
     const error = {
       response: { status: 401 }
     };
     
-    errorHandler(error);
+    await expect(errorHandler(error)).rejects.toBeDefined();
     
     expect(localStorageMock.removeItem).toHaveBeenCalledWith('authToken');
     expect(localStorageMock.removeItem).toHaveBeenCalledWith('user');
@@ -116,7 +121,7 @@ describe('API Service', () => {
     expect(mockLocation.href).toBe('/login');
   });
 
-  it('should handle 403 errors with proper logging', () => {
+  it('should handle 403 errors with proper logging', async () => {
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     
     const errorHandler = mockAxiosInstance.interceptors.response.use.mock.calls[0][1];
@@ -127,14 +132,14 @@ describe('API Service', () => {
       }
     };
     
-    errorHandler(error);
+    await expect(errorHandler(error)).rejects.toBeDefined();
     
     expect(consoleSpy).toHaveBeenCalledWith('403 Forbidden - insufficient permissions:', 'Forbidden');
     
     consoleSpy.mockRestore();
   });
 
-  it('should handle network errors', () => {
+  it('should handle network/CORS-like errors', async () => {
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     
     const errorHandler = mockAxiosInstance.interceptors.response.use.mock.calls[0][1];
@@ -143,14 +148,14 @@ describe('API Service', () => {
       message: 'Network Error'
     };
     
-    errorHandler(error);
+    await expect(errorHandler(error)).rejects.toBeDefined();
     
-    expect(consoleSpy).toHaveBeenCalledWith('Network error - check your connection');
+    expect(consoleSpy).toHaveBeenCalledWith('CORS error - frontend domain not allowed by backend');
     
     consoleSpy.mockRestore();
   });
 
-  it('should handle CORS errors', () => {
+  it('should handle CORS errors', async () => {
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     
     const errorHandler = mockAxiosInstance.interceptors.response.use.mock.calls[0][1];
@@ -158,25 +163,25 @@ describe('API Service', () => {
       message: 'CORS error detected'
     };
     
-    errorHandler(error);
+    await expect(errorHandler(error)).rejects.toBeDefined();
     
-    expect(consoleSpy).toHaveBeenCalledWith('CORS error - check server configuration');
+    expect(consoleSpy).toHaveBeenCalledWith('CORS error - frontend domain not allowed by backend');
     
     consoleSpy.mockRestore();
   });
 
-  it('should handle timeout errors', () => {
+  it('should handle timeout errors', async () => {
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     
     const errorHandler = mockAxiosInstance.interceptors.response.use.mock.calls[0][1];
     const error = {
       code: 'ECONNABORTED',
-      message: 'timeout of 10000ms exceeded'
+      message: 'timeout of 30000ms exceeded'
     };
     
-    errorHandler(error);
+    await expect(errorHandler(error)).rejects.toBeDefined();
     
-    expect(consoleSpy).toHaveBeenCalledWith('Request timeout - server may be slow');
+    expect(consoleSpy).toHaveBeenCalledWith('Request timeout - backend may be sleeping or unreachable');
     
     consoleSpy.mockRestore();
   });

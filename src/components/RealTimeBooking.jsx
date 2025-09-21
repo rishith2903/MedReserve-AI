@@ -1,4 +1,6 @@
-import React, { useState, useEffect } from 'react';
+/* eslint-disable react/prop-types */
+/* eslint-disable no-console */
+import { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -56,8 +58,6 @@ const RealTimeBooking = ({ open, onClose, doctorId, doctorName, onSuccess }) => 
   const fetchAvailableSlots = async () => {
     try {
       setLoadingSlots(true);
-      const dateStr = formData.appointmentDate.toISOString().split('T')[0];
-      
       // Generate time slots (this would normally come from the backend)
       const slots = [];
       for (let hour = 9; hour <= 17; hour++) {

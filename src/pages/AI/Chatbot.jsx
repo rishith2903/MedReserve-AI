@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
+/* eslint-disable no-console */
+import { useState, useEffect, useRef } from 'react';
 import {
   Box,
   Paper,
@@ -196,26 +197,26 @@ const Chatbot = () => {
   return (
     <Box sx={{ height: '100vh', display: 'flex', flexDirection: 'column', p: 2 }}>
       {/* Header */}
-      <Paper sx={{ p: 2, mb: 2, background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: 'white' }}>
+      <Paper sx={{ p: 2, mb: 2 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            <Avatar sx={{ bgcolor: 'rgba(255,255,255,0.2)', mr: 2 }}>
+            <Avatar sx={{ mr: 2 }}>
               <SmartToy />
             </Avatar>
             <Box>
-              <Typography variant="h5" sx={{ fontWeight: 700 }}>
+              <Typography variant="h6" sx={{ fontWeight: 700 }}>
                 MedReserve AI Assistant
               </Typography>
-              <Typography variant="body2" sx={{ opacity: 0.9 }}>
+              <Typography variant="body2" color="text.secondary">
                 Your intelligent healthcare companion
               </Typography>
             </Box>
           </Box>
           <Box sx={{ display: 'flex', gap: 1 }}>
-            <IconButton sx={{ color: 'white' }}>
+            <IconButton>
               <Translate />
             </IconButton>
-            <IconButton sx={{ color: 'white' }}>
+            <IconButton>
               <Refresh />
             </IconButton>
           </Box>

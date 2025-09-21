@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
   Box,
@@ -46,7 +46,7 @@ const Login = () => {
   const from = location.state?.from?.pathname || '/dashboard';
 
   // Check for success message from signup
-  React.useEffect(() => {
+useEffect(() => {
     if (location.state?.message) {
       setSuccessMessage(location.state.message);
     }
@@ -66,7 +66,7 @@ const Login = () => {
   });
 
   // Pre-fill email if coming from signup
-  React.useEffect(() => {
+useEffect(() => {
     if (location.state?.email) {
       setValue('email', location.state.email);
     }
@@ -229,7 +229,7 @@ const Login = () => {
 
               <Box sx={{ textAlign: 'center' }}>
                 <Typography variant="body2">
-                  Don't have an account?{' '}
+                  Don&apos;t have an account?{' '}
                   <Link to="/signup" style={{ textDecoration: 'none', color: 'inherit' }}>
                     <Button variant="text" size="small">
                       Sign Up

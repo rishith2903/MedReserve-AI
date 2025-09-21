@@ -1,20 +1,46 @@
-import React from 'react';
+import { useState } from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { AuthProvider, useAuth } from '../contexts/AuthContext';
 import * as api from '../services/api';
 
-// Mock the API module
+// Mock the API module to provide authAPI used by AuthContext
 vi.mock('../services/api', () => ({
-  post: vi.fn(),
-  get: vi.fn(),
-  put: vi.fn(),
-  delete: vi.fn(),
+  authAPI: {
+    login: vi.fn(),
+    signup: vi.fn(),
+    logout: vi.fn(),
+    getCurrentUser: vi.fn(),
+  },
 }));
 
 // Test component to access auth context
 const TestComponent = () => {
-  const { user, login, logout, signup, loading, error } = useAuth();
+  const { user, login, logout, signup, isLoading } = useAuth();
+  const [error, setError] = useState(null);
+  
+  const handleLogin = async () => {
+    setError(null);
+    try {
+      await login({ email: 'test@example.com', password: 'password123' });
+    } catch (e) {
+      setError(e?.response?.data?.message || e.message || 'Unknown error');
+    }
+  };
+
+  const handleSignup = async () => {
+    setError(null);
+    try {
+      await signup({
+        email: 'new@example.com',
+        password: 'password123',
+        firstName: 'Test',
+        lastName: 'User',
+      });
+    } catch (e) {
+      setError(e?.response?.data?.message || e.message || 'Unknown error');
+    }
+  };
   
   return (
     <div>
@@ -22,25 +48,20 @@ const TestComponent = () => {
         {user ? `Logged in as ${user.email}` : 'Not logged in'}
       </div>
       <div data-testid="loading-status">
-        {loading ? 'Loading...' : 'Not loading'}
+        {isLoading ? 'Loading...' : 'Not loading'}
       </div>
       <div data-testid="error-status">
         {error || 'No error'}
       </div>
       <button 
         data-testid="login-btn" 
-        onClick={() => login('test@example.com', 'password123')}
+        onClick={handleLogin}
       >
         Login
       </button>
       <button 
         data-testid="signup-btn" 
-        onClick={() => signup({
-          email: 'new@example.com',
-          password: 'password123',
-          firstName: 'Test',
-          lastName: 'User'
-        })}
+        onClick={handleSignup}
       >
         Signup
       </button>
@@ -75,20 +96,16 @@ describe('AuthContext', () => {
 
   it('should handle successful login', async () => {
     const mockResponse = {
-      data: {
-        accessToken: 'mock-token',
-        refreshToken: 'mock-refresh-token',
-        user: {
-          id: 1,
-          email: 'test@example.com',
-          firstName: 'Test',
-          lastName: 'User',
-          role: 'PATIENT'
-        }
-      }
+      accessToken: 'mock-token',
+      refreshToken: 'mock-refresh-token',
+      id: 1,
+      email: 'test@example.com',
+      firstName: 'Test',
+      lastName: 'User',
+      role: 'PATIENT',
     };
 
-    api.post.mockResolvedValueOnce(mockResponse);
+    api.authAPI.login.mockResolvedValueOnce(mockResponse);
 
     renderWithAuthProvider(<TestComponent />);
     
@@ -104,12 +121,12 @@ describe('AuthContext', () => {
 
     // Check localStorage
     expect(localStorage.getItem('authToken')).toBe('mock-token');
-    expect(localStorage.getItem('user')).toBe(JSON.stringify(mockResponse.data.user));
+    expect(localStorage.getItem('user')).toBe(JSON.stringify({ id: 1, email: 'test@example.com', firstName: 'Test', lastName: 'User', role: 'PATIENT' }));
   });
 
   it('should handle login failure', async () => {
     const mockError = new Error('Invalid credentials');
-    api.post.mockRejectedValueOnce(mockError);
+    api.authAPI.login.mockRejectedValueOnce(mockError);
 
     renderWithAuthProvider(<TestComponent />);
     
@@ -123,11 +140,9 @@ describe('AuthContext', () => {
   });
 
   it('should handle successful signup', async () => {
-    const mockResponse = {
-      data: 'User registered successfully!'
-    };
+    const mockResponse = { success: true, message: 'User registered successfully!' };
 
-    api.post.mockResolvedValueOnce(mockResponse);
+    api.authAPI.signup.mockResolvedValueOnce(mockResponse);
 
     renderWithAuthProvider(<TestComponent />);
     
@@ -138,7 +153,7 @@ describe('AuthContext', () => {
       expect(screen.getByTestId('error-status')).toHaveTextContent('No error');
     });
 
-    expect(api.post).toHaveBeenCalledWith('/auth/signup', {
+    expect(api.authAPI.signup).toHaveBeenCalledWith({
       email: 'new@example.com',
       password: 'password123',
       firstName: 'Test',
@@ -156,7 +171,7 @@ describe('AuthContext', () => {
       lastName: 'User'
     }));
 
-    api.post.mockResolvedValueOnce({ data: 'Logged out successfully' });
+    api.authAPI.logout.mockResolvedValueOnce({});
 
     renderWithAuthProvider(<TestComponent />);
     
@@ -169,6 +184,7 @@ describe('AuthContext', () => {
     // Check localStorage is cleared
     expect(localStorage.getItem('authToken')).toBeNull();
     expect(localStorage.getItem('user')).toBeNull();
+    expect(api.authAPI.logout).toHaveBeenCalled();
   });
 
   it('should restore user from localStorage on mount', () => {
@@ -196,7 +212,7 @@ describe('AuthContext', () => {
       }
     };
 
-    api.post.mockRejectedValueOnce(mockError);
+    api.authAPI.login.mockRejectedValueOnce(mockError);
 
     renderWithAuthProvider(<TestComponent />);
     
@@ -209,7 +225,7 @@ describe('AuthContext', () => {
 
   it('should clear error on successful operation', async () => {
     // First, cause an error
-    api.post.mockRejectedValueOnce(new Error('Test error'));
+    api.authAPI.login.mockRejectedValueOnce(new Error('Test error'));
     
     renderWithAuthProvider(<TestComponent />);
     
@@ -221,12 +237,14 @@ describe('AuthContext', () => {
 
     // Then, perform successful operation
     const mockResponse = {
-      data: {
-        accessToken: 'mock-token',
-        user: { id: 1, email: 'test@example.com' }
-      }
+      accessToken: 'mock-token',
+      id: 1,
+      email: 'test@example.com',
+      firstName: 'Test',
+      lastName: 'User',
+      role: 'PATIENT',
     };
-    api.post.mockResolvedValueOnce(mockResponse);
+    api.authAPI.login.mockResolvedValueOnce(mockResponse);
     
     fireEvent.click(screen.getByTestId('login-btn'));
     

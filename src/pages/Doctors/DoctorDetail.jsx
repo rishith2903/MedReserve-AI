@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import {
   Box,
@@ -17,19 +17,16 @@ import {
 import {
   CalendarToday,
   LocationOn,
-  Star,
   School,
   Work,
 } from '@mui/icons-material';
 import { doctorsAPI } from '../../services/api';
-import RealTimeBooking from '../../components/RealTimeBooking';
 
 const DoctorDetail = () => {
   const { id } = useParams();
   const [doctor, setDoctor] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [bookingOpen, setBookingOpen] = useState(false);
 
   useEffect(() => {
     fetchDoctorDetails();
@@ -90,10 +87,6 @@ const DoctorDetail = () => {
     }
   };
 
-  const handleBookingSuccess = (appointmentData) => {
-    console.log('Appointment booked successfully:', appointmentData);
-    // You could show a success message or refresh data here
-  };
 
   if (loading) {
     return (

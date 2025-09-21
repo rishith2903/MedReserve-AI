@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Box,
   Grid,
@@ -15,7 +15,6 @@ import {
   Select,
   MenuItem,
   Rating,
-  Skeleton,
   Alert,
   CircularProgress
 } from '@mui/material';
@@ -26,8 +25,6 @@ import {
   CalendarToday,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
-import { doctorsAPI } from '../../services/api';
-import RealTimeBooking from '../../components/RealTimeBooking';
 import realTimeDataService from '../../services/realTimeDataService';
 
 const DoctorList = () => {

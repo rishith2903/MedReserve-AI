@@ -1,4 +1,4 @@
-import React from 'react';
+/* eslint-disable react/prop-types */
 import { Navigate, useLocation } from 'react-router-dom';
 import { Box, CircularProgress, Typography } from '@mui/material';
 import { useAuth } from '../../contexts/AuthContext';
@@ -45,7 +45,7 @@ const ProtectedRoute = ({ children, requiredRole }) => {
           Access Denied
         </Typography>
         <Typography variant="body1" color="text.secondary">
-          You don't have permission to access this page.
+          You don&apos;t have permission to access this page.
         </Typography>
       </Box>
     );

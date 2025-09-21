@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+/* eslint-disable no-console */
+import { useState, useEffect } from 'react';
 import {
   Box,
   Container,
@@ -195,46 +196,33 @@ const DoctorDashboard = () => {
 
   return (
     <Box sx={{ flexGrow: 1, p: 3, backgroundColor: 'background.default', minHeight: '100vh' }}>
-      {/* Welcome Section */}
-      <Box sx={{
-        mb: 4,
-        p: 3,
-        background: 'linear-gradient(135deg, #4caf50 0%, #2e7d32 100%)',
-        borderRadius: 3,
-        color: 'white',
-        position: 'relative',
-        overflow: 'hidden'
-      }}>
-        <Box sx={{ position: 'relative', zIndex: 1 }}>
-          <Typography variant="h3" gutterBottom sx={{ fontWeight: 700, mb: 1 }}>
-            Good morning, Dr. {user?.lastName || 'Doctor'}! 👨‍⚕️
-          </Typography>
-          <Typography variant="h6" sx={{ opacity: 0.9, fontWeight: 400 }}>
-            Ready to help your patients today
-          </Typography>
-          <Typography variant="body1" sx={{ opacity: 0.8, mt: 1 }}>
-            {new Date().toLocaleDateString('en-US', {
-              weekday: 'long',
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric'
-            })}
-          </Typography>
-        </Box>
-      </Box>
+      {/* Header */}
+      <Paper sx={{ mb: 4, p: 3 }}>
+        <Typography variant="h5" gutterBottom sx={{ fontWeight: 700 }}>
+          Good morning, Dr. {user?.lastName || 'Doctor'}! 👨‍⚕️
+        </Typography>
+        <Typography variant="body2" color="text.secondary">
+          Ready to help your patients today
+        </Typography>
+        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
+          {new Date().toLocaleDateString('en-US', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+          })}
+        </Typography>
+      </Paper>
 
       {/* Doctor Metrics Cards */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
         {doctorMetrics.map((metric, index) => (
           <Grid item xs={12} sm={6} md={3} key={index}>
-            <Card sx={{
+            <Card variant="outlined" sx={{
               height: '100%',
-              background: `linear-gradient(135deg, ${metric.color}15 0%, ${metric.color}25 100%)`,
-              border: `1px solid ${metric.color}30`,
-              transition: 'all 0.3s ease',
+              transition: 'transform 0.2s ease',
               '&:hover': {
-                transform: 'translateY(-4px)',
-                boxShadow: `0 8px 25px ${metric.color}40`,
+                transform: 'translateY(-2px)'
               }
             }}>
               <CardContent>
@@ -281,7 +269,7 @@ const DoctorDashboard = () => {
           <Card>
             <CardContent>
               <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, mb: 3 }}>
-                Today's Appointments
+                Today&apos;s Appointments
               </Typography>
               <List>
                 {todaysAppointments.map((appointment, index) => (

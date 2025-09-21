@@ -1,14 +1,11 @@
-import React from 'react';
-import PlaceholderPage from '../PlaceholderPage';
-import { MonitorHeart } from '@mui/icons-material';
+import { Container } from '@mui/material';
+import APIStatusDashboard from '../../components/admin/APIStatusDashboard';
 
 const SystemHealth = () => {
   return (
-    <PlaceholderPage
-      title="System Health"
-      description="Monitor system performance and health metrics. Admin access required."
-      icon={MonitorHeart}
-    />
+    <Container maxWidth="lg" sx={{ py: 3 }}>
+      <APIStatusDashboard />
+    </Container>
   );
 };
 

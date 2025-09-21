@@ -1,4 +1,3 @@
-import React from 'react';
 import PlaceholderPage from '../PlaceholderPage';
 import { People } from '@mui/icons-material';
 

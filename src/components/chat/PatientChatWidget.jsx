@@ -3,11 +3,10 @@
  * Provides AI chatbot assistance for patients
  */
 
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
-import { Badge } from '../ui/badge';
 import { ScrollArea } from '../ui/scroll-area';
 import { 
   MessageCircle, 
@@ -20,7 +19,6 @@ import {
   Maximize2,
   Calendar,
   Pill,
-  FileText,
   Phone
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';

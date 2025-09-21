@@ -1,4 +1,3 @@
-import React from 'react';
 import PlaceholderPage from '../PlaceholderPage';
 import { CloudUpload } from '@mui/icons-material';
 

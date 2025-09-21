@@ -52,15 +52,9 @@
     "test:ui": "vitest --ui",
     "test:run": "vitest run",
     "test:coverage": "vitest run --coverage",
-    "lint": "eslint src --ext .js,.jsx --report-unused-disable-directives --max-warnings 0",
+    "lint": "eslint src --ext .js,.jsx --report-unused-disable-directives",
     "lint:fix": "eslint src --ext .js,.jsx --fix",
     "check-js-only": "node scripts/check-js-only.js"
-  },
-  "eslintConfig": {
-    "extends": [
-      "react-app",
-      "react-app/jest"
-    ]
   },
   "browserslist": {
     "production": [

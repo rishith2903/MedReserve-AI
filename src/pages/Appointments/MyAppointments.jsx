@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+/* eslint-disable no-console */
+import { useState, useEffect } from 'react';
 import {
   Box,
   Grid,
@@ -17,7 +18,6 @@ import {
   DialogActions,
   TextField,
   useTheme,
-  alpha,
 } from '@mui/material';
 import {
   Event,
@@ -302,7 +302,7 @@ const MyAppointments = () => {
 
                   {appointment.notes && (
                     <Typography variant="body2" color="text.secondary" sx={{ mt: 1, fontStyle: 'italic' }}>
-                      "{appointment.notes}"
+                      &quot;{appointment.notes}&quot;
                     </Typography>
                   )}
                 </Box>
@@ -350,7 +350,7 @@ const MyAppointments = () => {
             No Appointments Found
           </Typography>
           <Typography variant="body1" color="text.secondary" paragraph>
-            You don't have any appointments scheduled yet.
+            You don&apos;t have any appointments scheduled yet.
           </Typography>
           <Button variant="contained" href="/doctors">
             Book Your First Appointment
