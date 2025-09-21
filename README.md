@@ -30,7 +30,6 @@ VITE_API_BASE_URL=http://localhost:8080
 VITE_ML_SERVICE_URL=http://localhost:5001
 VITE_CHATBOT_SERVICE_URL=http://localhost:8001
 VITE_APP_NAME=MedReserve AI
-VITE_APP_VERSION=1.0.0
 ```
 
 ## 🧪 Testing
