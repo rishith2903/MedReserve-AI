@@ -1,23 +1,69 @@
-# 🏥 MedReserve AI - Frontend Application
+# 🏥 MedReserve — Frontend (React + Vite)
 
-[![React](https://img.shields.io/badge/React-19.1.0-blue.svg)](https://reactjs.org/)
-[![Vite](https://img.shields.io/badge/Vite-5.4.0-purple.svg)](https://vitejs.dev/)
-[![Material-UI](https://img.shields.io/badge/Material--UI-7.2.0-blue.svg)](https://mui.com/)
-[![JavaScript](https://img.shields.io/badge/JavaScript-ES2021-yellow.svg)](https://developer.mozilla.org/en-US/docs/Web/JavaScript)
-[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+See overall architecture diagram: [../docs/architecture.mmd](../docs/architecture.mmd)
 
-A modern, responsive React frontend for the MedReserve AI healthcare management platform. Built with **JavaScript-only** architecture using React 19, Vite, and Material-UI, providing an intuitive interface for patients, doctors, and administrators.
+Modern, responsive UI for patients, doctors, and admins. JavaScript-only (no TypeScript).
 
-## 🚫 **IMPORTANT: JavaScript-Only Project**
+## 🚀 Quickstart
 
-**This project uses ONLY JavaScript (.js/.jsx files). TypeScript is NOT allowed.**
+Windows (PowerShell)
+```
+cd frontend
+npm install
+npm run dev
+```
 
-- ✅ **Use**: `.js` and `.jsx` files
-- ❌ **Do NOT use**: `.ts`, `.tsx`, `tsconfig.json`, or TypeScript syntax
-- 🛡️ **Enforcement**: Pre-commit hooks and linting rules prevent TypeScript usage
-- 📝 **Validation**: Run `npm run check-js-only` to verify compliance
+macOS/Linux
+```
+cd frontend && npm install && npm run dev
+```
 
-## 🌟 Features
+Local URL: http://localhost:3000
+
+## 🔧 Configuration (.env.local — example)
+```
+VITE_API_BASE_URL=http://localhost:8080
+VITE_ML_SERVICE_URL=http://localhost:5001
+VITE_CHATBOT_SERVICE_URL=http://localhost:8001
+VITE_APP_NAME=MedReserve AI
+VITE_APP_VERSION=1.0.0
+```
+
+## 🧪 Testing
+```
+# Unit tests (Vitest)
+npm test
+
+# Coverage
+npm run test:coverage
+
+# Playwright E2E
+npm run e2e:install
+npm run e2e
+```
+
+## 🐳 Docker (service-only)
+```
+docker build -t medreserve-frontend .
+docker run -p 3000:80 medreserve-frontend
+```
+
+Tip: Prefer running all services together with root docker-compose.
+
+## 🔒 Notes
+- JS-only project (.js/.jsx). No TypeScript.
+- Use env variables above to point to local or production services.
+
+## 👥 Demo Credentials (for testing only)
+- Patient: patient@medreserve.com / password123
+- Doctor: doctor@medreserve.com / password123
+- Admin: demo@medreserve.com / password123
+- Master Admin: admin@medreserve.com / MasterAdmin@123
+
+## 🌐 Production
+- Example API base: https://medreserve-ai-backend.onrender.com
+- Example ML: https://medreserve-ml.onrender.com
+- Example Chatbot: https://medreserve-chatbot.onrender.com
 
 ### 🔐 Authentication & Authorization
 - **Secure Login/Signup** with JWT token management
@@ -127,7 +173,6 @@ VITE_CHATBOT_SERVICE_URL=http://localhost:8002
 # Application Configuration
 VITE_APP_NAME=MedReserve AI
 VITE_APP_VERSION=1.0.0
-VITE_APP_DESCRIPTION=Healthcare Management Platform
 
 # Feature Flags
 VITE_ENABLE_CHATBOT=true
@@ -141,6 +186,11 @@ VITE_FIREBASE_CONFIG=your_firebase_config
 # Development
 VITE_DEBUG_MODE=true
 VITE_LOG_LEVEL=debug
+# API Timeouts
+VITE_API_TIMEOUT=30000
+# Auto logout inactivity timeout (ms)
+VITE_INACTIVITY_TIMEOUT_MS=300000
+```
 ```
 
 ### 4. Start Development Server
@@ -157,7 +207,15 @@ pnpm dev
 
 The application will be available at `http://localhost:3000`
 
-### 5. Build for Production
+### 5. Smoke test signup/login (optional)
+```bash
+# Backend must be running on http://localhost:8080
+npm run smoke:auth
+# Or specify a custom base:
+API_BASE_URL=http://localhost:8080 npm run smoke:auth
+```
+
+### 6. Build for Production
 ```bash
 # Build optimized production bundle
 npm run build
@@ -169,7 +227,13 @@ npm run preview
 npm run analyze
 ```
 
-## 🧪 Testing
+### 🔐 Sessions and Security
+
+- Automatic token refresh: If the access token expires, the client will transparently refresh it using the stored refresh token and retry the request.
+- Session expiry handling: If refresh fails, credentials are cleared, and a clear message is shown on the login page.
+- Inactivity auto-logout: After 5 minutes of inactivity, the user is logged out and redirected to login with an explanatory message.
+
+### 🧪 Testing
 
 ### Unit Tests
 ```bash
@@ -198,13 +262,19 @@ npm run test:ui
 npm run test:update-snapshots
 ```
 
-### End-to-End Testing
+### E2E Testing
 ```bash
-# Run E2E tests (if configured)
-npm run test:e2e
+# Install Playwright browsers (first time)
+npm run e2e:install
 
-# Run E2E tests in headless mode
-npm run test:e2e:headless
+# Run E2E tests (frontend dev server and backend must be running)
+npm run e2e
+
+# Run E2E in headed mode
+npm run e2e:headed
+
+# Open Playwright UI mode
+npm run e2e:ui
 ```
 
 ## 🐳 Docker Deployment
@@ -312,6 +382,8 @@ aws cloudfront create-invalidation --distribution-id YOUR_DISTRIBUTION_ID --path
 ```
 
 ## 📁 Project Structure
+
+See also: Routing and role protection docs in `docs/ROUTING.md`.
 
 ```
 frontend/
@@ -594,6 +666,11 @@ export const useLocalStorage = (key, initialValue) => {
 ```
 
 ### Form Validation with Yup
+
+Validation rules used in the app:
+- Phone: Indian format only — must start with +91 followed by 10 digits (first digit 6–9). Example: +919876543210
+- Password: must be 8+ chars with uppercase, lowercase, digit, and one of @$!%*?&.
+
 ```javascript
 // src/utils/validation.js
 import * as yup from 'yup';
