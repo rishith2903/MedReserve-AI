@@ -41,9 +41,10 @@ export const AuthProvider = ({ children }) => {
             setTimeout(async () => {
               try {
                 const response = await authAPI.getCurrentUser();
-                if (response.user) {
-                  setUser(response.user);
-                  localStorage.setItem('user', JSON.stringify(response.user));
+                const maybeUser = response?.user || response;
+                if (maybeUser && (maybeUser.email || maybeUser.id)) {
+                  setUser(maybeUser);
+                  localStorage.setItem('user', JSON.stringify(maybeUser));
                 }
               } catch (error) {
                 console.warn('Token verification failed:', error);
@@ -88,13 +89,7 @@ export const AuthProvider = ({ children }) => {
         localStorage.setItem('user', JSON.stringify(user));
         localStorage.setItem('refreshToken', response.refreshToken);
 
-        // Debug logging
-        console.log('🔐 Login successful:', {
-          userId: user.id,
-          email: user.email,
-          role: user.role,
-          tokenLength: token.length
-        });
+        // Debug logging removed to avoid exposing sensitive user details in console
       } else {
         throw new Error('Invalid response format');
       }

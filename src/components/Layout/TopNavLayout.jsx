@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import {
   AppBar,
@@ -40,6 +40,9 @@ import {
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme as useCustomTheme } from '../../contexts/ThemeContext';
 import { useAutoLogout } from '../../hooks/useAutoLogout';
+import { Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
+import { ROLES } from '../../utils/roles';
+import BreadcrumbsNav from '../BreadcrumbsNav';
 
 const TopNavLayout = () => {
   const { user, logout } = useAuth();
@@ -53,8 +56,8 @@ const TopNavLayout = () => {
   const [notificationAnchor, setNotificationAnchor] = useState(null);
   const [navMenuAnchor, setNavMenuAnchor] = useState(null);
 
-  // Auto logout hook
-  useAutoLogout();
+  // Auto logout hook with warning
+  const { showWarning, secondsRemaining, staySignedIn } = useAutoLogout();
 
   const handleProfileMenuOpen = (event) => {
     setAnchorEl(event.currentTarget);
@@ -86,8 +89,8 @@ const TopNavLayout = () => {
     handleProfileMenuClose();
   };
 
-  // Role-based navigation items
-  const getNavigationItems = () => {
+  // Role-based navigation items (memoized)
+  const navigationItems = useMemo(() => {
     const userRole = user?.role?.name || user?.role;
 
     // Common items for all authenticated users
@@ -95,8 +98,7 @@ const TopNavLayout = () => {
       { label: 'Dashboard', path: '/dashboard', icon: <Dashboard /> },
     ];
 
-    // Patient-specific navigation
-    if (userRole === 'PATIENT') {
+    if (userRole === ROLES.PATIENT) {
       return [
         ...commonItems,
         { label: 'Find Doctors', path: '/doctors', icon: <People /> },
@@ -111,8 +113,7 @@ const TopNavLayout = () => {
       ];
     }
 
-    // Doctor-specific navigation
-    if (userRole === 'DOCTOR') {
+    if (userRole === ROLES.DOCTOR) {
       return [
         ...commonItems,
         { label: 'My Patients', path: '/patients', icon: <People /> },
@@ -124,8 +125,7 @@ const TopNavLayout = () => {
       ];
     }
 
-    // Admin-specific navigation
-    if (userRole === 'ADMIN' || userRole === 'MASTER_ADMIN') {
+    if (userRole === ROLES.ADMIN || userRole === ROLES.MASTER_ADMIN) {
       return [
         ...commonItems,
         { label: 'All Users', path: '/admin/users', icon: <People /> },
@@ -137,11 +137,8 @@ const TopNavLayout = () => {
       ];
     }
 
-    // Default fallback
     return commonItems;
-  };
-
-  const navigationItems = getNavigationItems();
+  }, [user]);
 
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh' }}>
@@ -276,12 +273,27 @@ const TopNavLayout = () => {
           ))}
         </Menu>
 
+        {/* Inactivity Warning Dialog */}
+        <Dialog open={!!showWarning} onClose={staySignedIn} aria-labelledby="inactivity-warning-title">
+          <DialogTitle id="inactivity-warning-title">Are you still there?</DialogTitle>
+          <DialogContent>
+            <Typography variant="body2">
+              You will be logged out due to inactivity in {secondsRemaining}s.
+            </Typography>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleLogout} color="error">Logout now</Button>
+            <Button onClick={staySignedIn} variant="contained">Stay signed in</Button>
+          </DialogActions>
+        </Dialog>
+
         {/* Main Content */}
         <Toolbar />
         <Container maxWidth="xl" sx={{ flexGrow: 1, py: 3 }}>
           <Outlet />
         </Container>
 
+        {/* Mobile Chat Fab */}
         {/* Mobile Chat Fab */}
         {isMobile && (
           <Fab

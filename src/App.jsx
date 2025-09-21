@@ -1,31 +1,20 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { AuthProvider } from './contexts/AuthContext';
+import ErrorBoundary from './components/ErrorBoundary';
+import { Suspense } from 'react';
+import { Box, CircularProgress } from '@mui/material';
+import DocumentTitle from './components/DocumentTitle';
 import { ThemeProvider as CustomThemeProvider } from './contexts/ThemeContext';
+import { AuthProvider } from './contexts/AuthContext';
 import TopNavLayout from './components/Layout/TopNavLayout';
-import MedicalReports from './pages/Health/MedicalReports';
-import Medicines from './pages/Health/Medicines';
-import UploadReports from './pages/Health/UploadReports';
-import Credentials from './pages/Admin/Credentials';
-import AllUsers from './pages/Admin/AllUsers';
-import AllDoctors from './pages/Admin/AllDoctors';
-import SystemHealth from './pages/Admin/SystemHealth';
-import MyPatients from './pages/Doctor/MyPatients';
 import ProtectedRoute from './components/Auth/ProtectedRoute';
 import Login from './pages/Auth/Login';
 import Signup from './pages/Auth/Signup';
-import Dashboard from './pages/Dashboard/DashboardMain';
-import DoctorList from './pages/Doctors/DoctorList';
-import DoctorDetail from './pages/Doctors/DoctorDetail';
-import BookAppointment from './pages/Appointments/BookAppointment';
-import MyAppointments from './pages/Appointments/MyAppointments';
-import AppointmentDetail from './pages/Appointments/AppointmentDetail';
-import SymptomChecker from './pages/AI/SymptomChecker';
-import Chatbot from './pages/AI/Chatbot';
-import Profile from './pages/Profile/Profile';
-import HealthTips from './pages/Health/HealthTips';
-import EmergencyContacts from './pages/Emergency/EmergencyContacts';
 import ChatbotLanguageSelector from './components/ChatbotLanguageSelector';
+import NotAuthorized from './pages/Errors/NotAuthorized';
+import NotFound from './pages/Errors/NotFound';
+import { adminRoutes, adminRequiredRoles } from './routes/adminRoutes.jsx';
+import { protectedRoutes } from './routes/protectedRoutes.jsx';
 
 // Create a client for React Query
 const queryClient = new QueryClient({
@@ -42,8 +31,10 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <CustomThemeProvider>
         <AuthProvider>
-          <Router>
-            <Routes>
+          <ErrorBoundary>
+            <Router>
+              <Suspense fallback={<Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh"><CircularProgress /></Box>}>
+                <Routes>
               {/* Public routes */}
               <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<Signup />} />
@@ -52,38 +43,31 @@ function App() {
               <Route path="/" element={<ProtectedRoute><TopNavLayout /></ProtectedRoute>}>
                 <Route index element={<Navigate to="/dashboard" replace />} />
 
-                <Route path="dashboard" element={<Dashboard />} />
-                <Route path="doctors" element={<DoctorList />} />
-                <Route path="doctors/:id" element={<DoctorDetail />} />
-                <Route path="book-appointment/:doctorId" element={<BookAppointment />} />
-                <Route path="appointments" element={<MyAppointments />} />
-                <Route path="appointments/:id" element={<AppointmentDetail />} />
-                <Route path="patients" element={<MyPatients />} />
-                <Route path="medical-reports" element={<MedicalReports />} />
-                <Route path="upload-reports" element={<UploadReports />} />
-                <Route path="medicines" element={<Medicines />} />
-                <Route path="symptom-checker" element={<SymptomChecker />} />
-                <Route path="chatbot" element={<Chatbot />} />
-                <Route path="credentials" element={<Credentials />} />
-                <Route path="profile" element={<Profile />} />
-                <Route path="health-tips" element={<HealthTips />} />
-                <Route path="emergency" element={<EmergencyContacts />} />
+                {protectedRoutes.map(({ path, element }) => (
+                  <Route key={path} path={path} element={element} />
+                ))}
 
-                {/* Admin routes */}
-                <Route path="admin/users" element={<AllUsers />} />
-                <Route path="admin/doctors" element={<AllDoctors />} />
-                <Route path="admin/system-health" element={<SystemHealth />} />
-                <Route path="admin/appointments" element={<div>Admin Appointments Page</div>} />
-                <Route path="admin/credentials" element={<Credentials />} />
+                {/* Admin routes (restrict to ADMIN and MASTER_ADMIN) via centralized config */}
+                {adminRoutes.map(({ path, element }) => (
+                  <Route
+                    key={path}
+                    path={path}
+                    element={<ProtectedRoute requiredRoles={adminRequiredRoles}>{element}</ProtectedRoute>}
+                  />
+                ))}
               </Route>
 
-              {/* Catch all route */}
-              <Route path="*" element={<Navigate to="/" replace />} />
+              {/* Not authorized and 404 */}
+              <Route path="/not-authorized" element={<NotAuthorized />} />
+              <Route path="*" element={<NotFound />} />
             </Routes>
+              </Suspense>
 
+            <DocumentTitle />
             {/* Multilingual Chatbot Language Selector */}
             <ChatbotLanguageSelector />
-          </Router>
+            </Router>
+          </ErrorBoundary>
         </AuthProvider>
       </CustomThemeProvider>
     </QueryClientProvider>

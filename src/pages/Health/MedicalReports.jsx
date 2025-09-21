@@ -20,6 +20,7 @@ import {
   MenuItem,
   Alert,
   CircularProgress,
+  Stack,
 } from '@mui/material';
 import {
   Description,
@@ -30,10 +31,27 @@ import {
   Add,
   FilterList,
   Search,
+  AttachFile,
 } from '@mui/icons-material';
 import { useAuth } from '../../contexts/AuthContext';
 import { medicalReportsAPI } from '../../services/api';
 import realTimeDataService from '../../services/realTimeDataService';
+
+const REPORT_TYPES = [
+  'OTHER',
+  'BLOOD_TEST',
+  'URINE_TEST',
+  'X_RAY',
+  'CT_SCAN',
+  'MRI',
+  'ULTRASOUND',
+  'ECG',
+  'ECHO',
+  'PATHOLOGY',
+  'RADIOLOGY',
+  'PRESCRIPTION',
+  'DISCHARGE_SUMMARY',
+];
 
 const MedicalReports = () => {
   const { user } = useAuth();
@@ -43,6 +61,13 @@ const MedicalReports = () => {
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('');
+
+  // Upload form state
+  const [uploadForm, setUploadForm] = useState({ title: '', description: '', reportType: 'OTHER' });
+  const [uploadFile, setUploadFile] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState(null);
+  const [uploadSuccess, setUploadSuccess] = useState(null);
 
   // Mock data for demonstration
   const mockReports = [
@@ -107,18 +132,72 @@ const MedicalReports = () => {
   };
 
   const handleUpload = () => {
+    setUploadError(null);
+    setUploadSuccess(null);
+    setUploadForm({ title: '', description: '', reportType: 'OTHER' });
+    setUploadFile(null);
     setUploadDialogOpen(true);
   };
 
-  const handleDownload = (report) => {
-    // Implement download logic
-    console.log('Downloading report:', report.title);
+  const handleUploadSubmit = async () => {
+    try {
+      setUploading(true);
+      setUploadError(null);
+      setUploadSuccess(null);
+
+      if (!uploadForm.title.trim()) {
+        setUploadError('Title is required');
+        setUploading(false);
+        return;
+      }
+      if (!uploadFile) {
+        setUploadError('Please select a file to upload');
+        setUploading(false);
+        return;
+      }
+
+      const form = new FormData();
+      form.append('file', uploadFile);
+      const reportMeta = {
+        title: uploadForm.title.trim(),
+        description: uploadForm.description?.trim() || '',
+        reportType: uploadForm.reportType || 'OTHER',
+        shareWithDoctor: false,
+      };
+      form.append('report', new Blob([JSON.stringify(reportMeta)], { type: 'application/json' }));
+
+      await medicalReportsAPI.upload(form);
+      setUploadSuccess('Report uploaded successfully');
+      setUploadDialogOpen(false);
+      await fetchReports();
+    } catch (e) {
+      const msg = e?.response?.data?.message || 'Upload failed. Please try again.';
+      setUploadError(msg);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleDownload = async (report) => {
+    try {
+      const { blob, filename } = await medicalReportsAPI.download(report.id);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename || report.title || 'report';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      setError('Failed to download report');
+    }
   };
 
   const handleDelete = async (reportId) => {
     if (window.confirm('Are you sure you want to delete this report?')) {
       try {
-        // await medicalReportsAPI.delete(reportId);
+        await medicalReportsAPI.delete(reportId);
         setReports(reports.filter(report => report.id !== reportId));
       } catch (err) {
         setError('Failed to delete report');
@@ -166,6 +245,12 @@ const MedicalReports = () => {
       {error && (
         <Alert severity="error" sx={{ mb: 3 }}>
           {error}
+        </Alert>
+      )}
+
+      {uploadSuccess && (
+        <Alert severity="success" sx={{ mb: 3 }}>
+          {uploadSuccess}
         </Alert>
       )}
 
@@ -288,48 +373,63 @@ const MedicalReports = () => {
       )}
 
       {/* Upload Dialog */}
-      <Dialog open={uploadDialogOpen} onClose={() => setUploadDialogOpen(false)} maxWidth="sm" fullWidth>
+      <Dialog open={uploadDialogOpen} onClose={() => !uploading && setUploadDialogOpen(false)} fullWidth maxWidth="sm">
         <DialogTitle>Upload Medical Report</DialogTitle>
         <DialogContent>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            Upload your medical reports, lab results, or imaging studies.
-          </Typography>
-          <TextField
-            fullWidth
-            label="Report Title"
-            margin="normal"
-            placeholder="e.g., Blood Test Results"
-          />
-          <FormControl fullWidth margin="normal">
-            <InputLabel>Report Type</InputLabel>
-            <Select label="Report Type">
-              <MenuItem value="Lab Report">Lab Report</MenuItem>
-              <MenuItem value="Imaging">Imaging</MenuItem>
-              <MenuItem value="Cardiac">Cardiac</MenuItem>
-              <MenuItem value="Other">Other</MenuItem>
-            </Select>
-          </FormControl>
-          <TextField
-            fullWidth
-            label="Description"
-            margin="normal"
-            multiline
-            rows={3}
-            placeholder="Brief description of the report"
-          />
-          <Box sx={{ mt: 2, p: 3, border: '2px dashed', borderColor: 'grey.300', borderRadius: 1, textAlign: 'center' }}>
-            <CloudUpload sx={{ fontSize: 48, color: 'text.secondary', mb: 1 }} />
-            <Typography variant="body2" color="text.secondary">
-              Drag and drop files here or click to browse
-            </Typography>
-            <Button variant="outlined" sx={{ mt: 1 }}>
-              Choose Files
-            </Button>
-          </Box>
+          <Stack spacing={2} sx={{ mt: 1 }}>
+            {uploadError && (
+              <Alert severity="error">{uploadError}</Alert>
+            )}
+            <TextField
+              label="Title"
+              value={uploadForm.title}
+              onChange={(e) => setUploadForm((f) => ({ ...f, title: e.target.value }))}
+              required
+              fullWidth
+            />
+            <TextField
+              label="Description"
+              value={uploadForm.description}
+              onChange={(e) => setUploadForm((f) => ({ ...f, description: e.target.value }))}
+              fullWidth
+              multiline
+              minRows={2}
+            />
+            <FormControl fullWidth>
+              <InputLabel>Report Type</InputLabel>
+              <Select
+                label="Report Type"
+                value={uploadForm.reportType}
+                onChange={(e) => setUploadForm((f) => ({ ...f, reportType: e.target.value }))}
+              >
+                {REPORT_TYPES.map((t) => (
+                  <MenuItem key={t} value={t}>{t.replaceAll('_', ' ')}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            <Box>
+              <Button variant="outlined" component="label" startIcon={<AttachFile />} disabled={uploading}>
+                {uploadFile ? 'Change File' : 'Choose File'}
+                <input
+                  hidden
+                  type="file"
+                  accept="application/pdf,image/*"
+                  onChange={(e) => setUploadFile(e.target.files?.[0] || null)}
+                />
+              </Button>
+              {uploadFile && (
+                <Typography variant="body2" sx={{ mt: 1 }}>
+                  Selected: {uploadFile.name}
+                </Typography>
+              )}
+            </Box>
+          </Stack>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setUploadDialogOpen(false)}>Cancel</Button>
-          <Button variant="contained">Upload</Button>
+          <Button onClick={() => setUploadDialogOpen(false)} disabled={uploading}>Cancel</Button>
+          <Button onClick={handleUploadSubmit} variant="contained" disabled={uploading}>
+            {uploading ? 'Uploading...' : 'Upload'}
+          </Button>
         </DialogActions>
       </Dialog>
     </Box>

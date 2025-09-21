@@ -17,7 +17,10 @@ import {
   MenuItem,
   Card,
   CardContent,
-  CardHeader
+  CardHeader,
+  LinearProgress,
+  IconButton,
+  InputAdornment
 } from '@mui/material';
 import {
   Person,
@@ -27,10 +30,15 @@ import {
   Email,
   Phone,
   LocationOn,
-  CalendarToday
+  CalendarToday,
+  Visibility,
+  VisibilityOff
 } from '@mui/icons-material';
 import { useAuth } from '../../contexts/AuthContext';
-import api from '../../services/api';
+import api, { authAPI } from '../../services/api';
+import { validateIndianPhone, validationMessages, STRONG_PASSWORD_REGEX } from '../../utils/validation';
+import { normalizePayload } from '../../utils/normalize';
+import { useForm, Controller } from 'react-hook-form';
 
 const Profile = () => {
   const { user, updateUser } = useAuth();
@@ -38,6 +46,9 @@ const Profile = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [phoneError, setPhoneError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
+  // Profile form state
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -64,6 +75,12 @@ const Profile = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
+    if (name === 'phoneNumber') {
+      setPhoneError('');
+    }
+    if (fieldErrors[name]) {
+      setFieldErrors(prev => ({ ...prev, [name]: '' }));
+    }
     setFormData(prev => ({
       ...prev,
       [name]: value
@@ -74,14 +91,37 @@ const Profile = () => {
     setLoading(true);
     setError('');
     setSuccess('');
+    setPhoneError('');
+
+    // Basic client-side validation for Indian +91 phone numbers
+    const trimmedPhone = (formData.phoneNumber || '').trim();
+    if (trimmedPhone && !validateIndianPhone(trimmedPhone)) {
+      setPhoneError(validationMessages.phoneIndia);
+      setLoading(false);
+      return;
+    }
 
     try {
-      const response = await api.put('/auth/profile', formData);
+      const payload = normalizePayload({ ...formData, phoneNumber: trimmedPhone });
+      const response = await api.put('/auth/profile', payload);
       updateUser(response.data);
       setSuccess('Profile updated successfully!');
       setIsEditing(false);
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to update profile');
+      const data = err?.response?.data;
+      const fe = {};
+      if (data?.validationErrors && typeof data.validationErrors === 'object') {
+        Object.entries(data.validationErrors).forEach(([field, message]) => {
+          fe[field] = String(message);
+        });
+      }
+      if (typeof data?.message === 'string') {
+        const lower = data.message.toLowerCase();
+        if (lower.includes('email is already in use')) fe.email = data.message;
+        if (lower.includes('phone number is already in use')) fe.phoneNumber = data.message;
+      }
+      setFieldErrors(fe);
+      setError(data?.message || err?.message || 'Failed to update profile');
     } finally {
       setLoading(false);
     }
@@ -102,6 +142,57 @@ const Profile = () => {
     }
     setIsEditing(false);
     setError('');
+  };
+
+  // Change Password form
+  const {
+    control: pwdControl,
+    handleSubmit: handlePwdSubmit,
+    reset: resetPwdForm,
+    formState: { errors: pwdErrors, isSubmitting: pwdSubmitting }
+  } = useForm({
+    defaultValues: {
+      currentPassword: '',
+      newPassword: '',
+      confirmNewPassword: ''
+    }
+  });
+
+  const computePasswordStrength = (val) => {
+    const v = val || '';
+    let score = 0;
+    if (v.length >= 8) score += 1;
+    if (/[A-Z]/.test(v)) score += 1;
+    if (/[a-z]/.test(v)) score += 1;
+    if (/\d/.test(v)) score += 1;
+    if (/[@$!%*?&]/.test(v)) score += 1;
+    return Math.min(4, score);
+  };
+
+  const [newPwdValue, setNewPwdValue] = useState('');
+  const [newPwdStrength, setNewPwdStrength] = useState(0);
+  const [showCurrentPwd, setShowCurrentPwd] = useState(false);
+  const [showNewPwd, setShowNewPwd] = useState(false);
+  const [showConfirmPwd, setShowConfirmPwd] = useState(false);
+
+  const onChangePassword = async (data) => {
+    try {
+      setError('');
+      setSuccess('');
+      // Validate new password strength and match
+      const { currentPassword, newPassword, confirmNewPassword } = data;
+      if (!STRONG_PASSWORD_REGEX.test(newPassword)) {
+        throw new Error('New password must be 8+ chars with uppercase, lowercase, digit, and one of @$!%*?&.');
+      }
+      if (newPassword !== confirmNewPassword) {
+        throw new Error('New password and confirm password do not match');
+      }
+      await authAPI.changePassword({ currentPassword, newPassword });
+      setSuccess('Password changed successfully!');
+      resetPwdForm();
+    } catch (err) {
+      setError(err?.response?.data?.message || err.message || 'Failed to change password');
+    }
   };
 
   if (!user) {
@@ -137,7 +228,11 @@ const Profile = () => {
           }
           subheader={
             <Typography variant="subtitle1" color="text.secondary">
-              {user.role} • Member since {new Date(user.createdAt).getFullYear()}
+              {(() => {
+                const roleLabel = user?.role?.name || user?.role || 'User';
+                const year = user?.createdAt ? new Date(user.createdAt).getFullYear() : undefined;
+                return year ? `${roleLabel} • Member since ${year}` : roleLabel;
+              })()}
             </Typography>
           }
           action={
@@ -203,6 +298,8 @@ const Profile = () => {
                 onChange={handleInputChange}
                 disabled={!isEditing}
                 variant={isEditing ? "outlined" : "filled"}
+                error={Boolean(fieldErrors.firstName)}
+                helperText={fieldErrors.firstName || ''}
               />
             </Grid>
 
@@ -215,6 +312,8 @@ const Profile = () => {
                 onChange={handleInputChange}
                 disabled={!isEditing}
                 variant={isEditing ? "outlined" : "filled"}
+                error={Boolean(fieldErrors.lastName)}
+                helperText={fieldErrors.lastName || ''}
               />
             </Grid>
 
@@ -228,6 +327,8 @@ const Profile = () => {
                 onChange={handleInputChange}
                 disabled={!isEditing}
                 variant={isEditing ? "outlined" : "filled"}
+                error={Boolean(fieldErrors.email)}
+                helperText={fieldErrors.email || ''}
                 InputProps={{
                   startAdornment: <Email sx={{ mr: 1, color: 'text.secondary' }} />
                 }}
@@ -243,6 +344,8 @@ const Profile = () => {
                 onChange={handleInputChange}
                 disabled={!isEditing}
                 variant={isEditing ? "outlined" : "filled"}
+                error={Boolean(phoneError) || Boolean(fieldErrors.phoneNumber)}
+                helperText={phoneError || fieldErrors.phoneNumber || (isEditing ? 'Use Indian +91 format, e.g., +919876543210' : '')}
                 InputProps={{
                   startAdornment: <Phone sx={{ mr: 1, color: 'text.secondary' }} />
                 }}
@@ -300,6 +403,129 @@ const Profile = () => {
                   startAdornment: <LocationOn sx={{ mr: 1, color: 'text.secondary', alignSelf: 'flex-start', mt: 1 }} />
                 }}
               />
+            </Grid>
+
+            {/* Change Password */}
+            <Grid item xs={12}>
+              <Typography variant="h6" gutterBottom>
+                Change Password
+              </Typography>
+              <Divider sx={{ mb: 2 }} />
+              <Box component="form" onSubmit={handlePwdSubmit(onChangePassword)} noValidate>
+                <Grid container spacing={2}>
+                  <Grid item xs={12} md={4}>
+                    <Controller
+                      name="currentPassword"
+                      control={pwdControl}
+                      rules={{ required: 'Current password is required' }}
+                      render={({ field }) => (
+                        <TextField
+                          {...field}
+                          type={showCurrentPwd ? 'text' : 'password'}
+                          label="Current Password"
+                          fullWidth
+                          required
+                          error={!!pwdErrors.currentPassword}
+                          helperText={pwdErrors.currentPassword?.message}
+                          InputProps={{
+                            endAdornment: (
+                              <InputAdornment position="end">
+                                <IconButton aria-label="toggle current password visibility" edge="end" onClick={() => setShowCurrentPwd(v => !v)}>
+                                  {showCurrentPwd ? <VisibilityOff /> : <Visibility />}
+                                </IconButton>
+                              </InputAdornment>
+                            )
+                          }}
+                        />
+                      )}
+                    />
+                  </Grid>
+                  <Grid item xs={12} md={4}>
+                    <Controller
+                      name="newPassword"
+                      control={pwdControl}
+                      rules={{ required: 'New password is required' }}
+                      render={({ field }) => (
+                        <Box>
+                          <TextField
+                            {...field}
+                            onChange={(e) => {
+                              field.onChange(e);
+                              const val = e.target.value;
+                              setNewPwdValue(val);
+                              setNewPwdStrength(computePasswordStrength(val));
+                            }}
+                            type={showNewPwd ? 'text' : 'password'}
+                            label="New Password"
+                            fullWidth
+                            required
+                            error={!!pwdErrors.newPassword}
+                            helperText={pwdErrors.newPassword?.message || validationMessages.passwordStrong}
+                            InputProps={{
+                              endAdornment: (
+                                <InputAdornment position="end">
+                                  <IconButton aria-label="toggle new password visibility" edge="end" onClick={() => setShowNewPwd(v => !v)}>
+                                    {showNewPwd ? <VisibilityOff /> : <Visibility />}
+                                  </IconButton>
+                                </InputAdornment>
+                              )
+                            }}
+                          />
+                          {newPwdValue && (
+                            <Box sx={{ mt: 1 }}>
+                              <LinearProgress
+                                variant="determinate"
+                                value={Math.min(100, (newPwdStrength / 4) * 100)}
+                                color={newPwdStrength <= 1 ? 'error' : newPwdStrength <= 3 ? 'warning' : 'success'}
+                                sx={{ height: 8, borderRadius: 1 }}
+                              />
+                              <Typography
+                                variant="caption"
+                                sx={{ mt: 0.5, display: 'block' }}
+                                color={newPwdStrength <= 1 ? 'error.main' : newPwdStrength <= 3 ? 'warning.main' : 'success.main'}
+                              >
+                                Strength: {newPwdStrength <= 1 ? 'Weak' : newPwdStrength <= 3 ? 'Medium' : 'Strong'}
+                              </Typography>
+                            </Box>
+                          )}
+                        </Box>
+                      )}
+                    />
+                  </Grid>
+                  <Grid item xs={12} md={4}>
+                    <Controller
+                      name="confirmNewPassword"
+                      control={pwdControl}
+                      rules={{ required: 'Confirm new password is required' }}
+                      render={({ field }) => (
+                        <TextField
+                          {...field}
+                          type={showConfirmPwd ? 'text' : 'password'}
+                          label="Confirm New Password"
+                          fullWidth
+                          required
+                          error={!!pwdErrors.confirmNewPassword}
+                          helperText={pwdErrors.confirmNewPassword?.message}
+                          InputProps={{
+                            endAdornment: (
+                              <InputAdornment position="end">
+                                <IconButton aria-label="toggle confirm password visibility" edge="end" onClick={() => setShowConfirmPwd(v => !v)}>
+                                  {showConfirmPwd ? <VisibilityOff /> : <Visibility />}
+                                </IconButton>
+                              </InputAdornment>
+                            )
+                          }}
+                        />
+                      )}
+                    />
+                  </Grid>
+                  <Grid item xs={12}>
+                    <Button type="submit" variant="contained" disabled={pwdSubmitting}>
+                      {pwdSubmitting ? 'Changing...' : 'Change Password'}
+                    </Button>
+                  </Grid>
+                </Grid>
+              </Box>
             </Grid>
           </Grid>
         </CardContent>

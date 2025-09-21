@@ -45,12 +45,21 @@ const Login = () => {
 
   const from = location.state?.from?.pathname || '/dashboard';
 
-  // Check for success message from signup
+// Check for success message from signup
 useEffect(() => {
     if (location.state?.message) {
       setSuccessMessage(location.state.message);
     }
   }, [location.state]);
+
+// Show session expired message if set by API client
+useEffect(() => {
+    const msg = localStorage.getItem('sessionMsg');
+    if (msg) {
+      setError(msg);
+      localStorage.removeItem('sessionMsg');
+    }
+  }, []);
 
   const {
     control,

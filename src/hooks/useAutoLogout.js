@@ -1,33 +1,61 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
-const INACTIVITY_TIMEOUT = 5 * 60 * 1000; // 5 minutes in milliseconds
+const RAW_TIMEOUT = import.meta.env.VITE_INACTIVITY_TIMEOUT_MS;
+const INACTIVITY_TIMEOUT = Number.isFinite(Number(RAW_TIMEOUT)) ? Number(RAW_TIMEOUT) : 5 * 60 * 1000; // default 5 minutes
+const RAW_WARNING = import.meta.env.VITE_INACTIVITY_WARNING_MS;
+const WARNING_MS = Number.isFinite(Number(RAW_WARNING)) ? Number(RAW_WARNING) : 60 * 1000; // default 60 seconds
 
 export const useAutoLogout = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const timeoutRef = useRef(null);
+  const warnRef = useRef(null);
+  const intervalRef = useRef(null);
+  const [showWarning, setShowWarning] = useState(false);
+  const [secondsRemaining, setSecondsRemaining] = useState(0);
 
   const resetTimeout = () => {
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-    }
+    // Clear existing timers
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    if (warnRef.current) clearTimeout(warnRef.current);
+    if (intervalRef.current) clearInterval(intervalRef.current);
+    setShowWarning(false);
 
     if (user) {
+      // Schedule logout
       timeoutRef.current = setTimeout(() => {
+        if (intervalRef.current) clearInterval(intervalRef.current);
         logout();
+        localStorage.setItem('sessionMsg', 'You were logged out due to inactivity. Please sign in again.');
         navigate('/login');
-        alert('You have been logged out due to inactivity.');
       }, INACTIVITY_TIMEOUT);
+
+      // Schedule warning
+      const warnDelay = Math.max(INACTIVITY_TIMEOUT - WARNING_MS, 0);
+      warnRef.current = setTimeout(() => {
+        setShowWarning(true);
+        setSecondsRemaining(Math.ceil(WARNING_MS / 1000));
+        // Start countdown
+        intervalRef.current = setInterval(() => {
+          setSecondsRemaining((s) => {
+            if (s <= 1) {
+              clearInterval(intervalRef.current);
+              return 0;
+            }
+            return s - 1;
+          });
+        }, 1000);
+      }, warnDelay);
     }
   };
 
   useEffect(() => {
     if (!user) {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      if (warnRef.current) clearTimeout(warnRef.current);
+      if (intervalRef.current) clearInterval(intervalRef.current);
       return;
     }
 
@@ -56,14 +84,14 @@ export const useAutoLogout = () => {
 
     // Cleanup function
     return () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      if (warnRef.current) clearTimeout(warnRef.current);
+      if (intervalRef.current) clearInterval(intervalRef.current);
       events.forEach(event => {
         document.removeEventListener(event, handleActivity, true);
       });
     };
   }, [user, logout, navigate]);
 
-  return null;
+  return { showWarning, secondsRemaining, staySignedIn: resetTimeout };
 };

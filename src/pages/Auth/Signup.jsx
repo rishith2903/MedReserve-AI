@@ -15,6 +15,7 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  LinearProgress,
 } from '@mui/material';
 import {
   Visibility,
@@ -28,15 +29,24 @@ import {
 import { useForm, Controller } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
+import { validationMessages, INDIA_PHONE_REGEX, STRONG_PASSWORD_REGEX } from '../../utils/validation';
+import { normalizePayload } from '../../utils/normalize';
 import { useAuth } from '../../contexts/AuthContext';
 
 const schema = yup.object({
-  firstName: yup.string().required('First name is required'),
-  lastName: yup.string().required('Last name is required'),
-  email: yup.string().email('Invalid email').required('Email is required'),
-  phoneNumber: yup.string().required('Phone number is required'),
-  password: yup.string().min(6, 'Password must be at least 6 characters').required('Password is required'),
-  confirmPassword: yup.string()
+  firstName: yup.string().trim().min(2, 'First name must be at least 2 characters').required('First name is required'),
+  lastName: yup.string().trim().min(2, 'Last name must be at least 2 characters').required('Last name is required'),
+  email: yup.string().trim().email('Invalid email').required('Email is required'),
+  phoneNumber: yup
+    .string()
+    .matches(INDIA_PHONE_REGEX, validationMessages.phoneIndia)
+    .required('Phone number is required'),
+  password: yup
+    .string()
+    .matches(STRONG_PASSWORD_REGEX, validationMessages.passwordStrong)
+    .required('Password is required'),
+  confirmPassword: yup
+    .string()
     .oneOf([yup.ref('password')], 'Passwords must match')
     .required('Confirm password is required'),
 });
@@ -47,12 +57,16 @@ const Signup = () => {
   
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [error, setError] = useState(null);
+  const [topError, setTopError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [passwordStrength, setPasswordStrength] = useState(0);
+  const [passwordValue, setPasswordValue] = useState('');
 
   const {
     control,
     handleSubmit,
+    setError,
+    setFocus,
     formState: { errors },
   } = useForm({
     resolver: yupResolver(schema),
@@ -67,12 +81,28 @@ const Signup = () => {
     },
   });
 
+  const computePasswordStrength = (val) => {
+    const v = val || '';
+    let score = 0;
+    if (v.length >= 8) score += 1;
+    if (/[A-Z]/.test(v)) score += 1;
+    if (/[a-z]/.test(v)) score += 1;
+    if (/\d/.test(v)) score += 1;
+    if (/[@$!%*?&]/.test(v)) score += 1;
+    // Cap at 4 for UI scale (length + 3 categories + special -> 5). We map 0-4.
+    return Math.min(4, score);
+  };
+
   const onSubmit = async (data) => {
     try {
       setIsLoading(true);
-      setError(null);
+      setTopError(null);
       const { confirmPassword, ...signupData } = data;
-      const response = await signup(signupData);
+
+      // Normalize and sanitize payload
+      const normalized = normalizePayload(signupData);
+
+      const response = await signup(normalized);
 
       // Signup successful, redirect to login
       navigate('/login', {
@@ -82,7 +112,22 @@ const Signup = () => {
         }
       });
     } catch (err) {
-      setError(err.response?.data?.message || 'Signup failed. Please try again.');
+      const data = err?.response?.data;
+
+      // Map server-side validation errors to fields using shared utility
+      try {
+        const { applyServerValidationErrors, extractServerMessage } = await import('../../utils/errorMap');
+        applyServerValidationErrors(
+          setError,
+          setFocus,
+          data,
+          ['firstName','lastName','email','phoneNumber','password','confirmPassword']
+        );
+        setTopError(extractServerMessage(err));
+      } catch (_) {
+        const msg = data?.message || err?.message || 'Signup failed. Please try again.';
+        setTopError(msg);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -117,9 +162,9 @@ const Signup = () => {
               Sign Up
             </Typography>
 
-            {error && (
+            {topError && (
               <Alert severity="error" sx={{ mb: 3 }}>
-                {error}
+                {topError}
               </Alert>
             )}
 
@@ -203,7 +248,7 @@ const Signup = () => {
                     label="Phone Number"
                     type="tel"
                     error={!!errors.phoneNumber}
-                    helperText={errors.phoneNumber?.message}
+                    helperText={errors.phoneNumber?.message || 'Use Indian +91 format, e.g., +919876543210'}
                     InputProps={{
                       startAdornment: (
                         <InputAdornment position="start">
@@ -219,35 +264,58 @@ const Signup = () => {
                 name="password"
                 control={control}
                 render={({ field }) => (
-                  <TextField
-                    {...field}
-                    margin="normal"
-                    required
-                    fullWidth
-                    label="Password"
-                    type={showPassword ? 'text' : 'password'}
-                    autoComplete="new-password"
-                    error={!!errors.password}
-                    helperText={errors.password?.message}
-                    InputProps={{
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <Lock />
-                        </InputAdornment>
-                      ),
-                      endAdornment: (
-                        <InputAdornment position="end">
-                          <IconButton
-                            aria-label="toggle password visibility"
-                            onClick={() => setShowPassword(!showPassword)}
-                            edge="end"
-                          >
-                            {showPassword ? <VisibilityOff /> : <Visibility />}
-                          </IconButton>
-                        </InputAdornment>
-                      ),
-                    }}
-                  />
+                  <Box>
+                    <TextField
+                      {...field}
+                      onChange={(e) => {
+                        field.onChange(e);
+                        const val = e.target.value;
+                        setPasswordValue(val);
+                        setPasswordStrength(computePasswordStrength(val));
+                      }}
+                      margin="normal"
+                      required
+                      fullWidth
+                      label="Password"
+                      type={showPassword ? 'text' : 'password'}
+                      autoComplete="new-password"
+                      error={!!errors.password}
+                      helperText={errors.password?.message || validationMessages.passwordStrong}
+                      InputProps={{
+                        startAdornment: (
+                          <InputAdornment position="start">
+                            <Lock />
+                          </InputAdornment>
+                        ),
+                        endAdornment: (
+                          <InputAdornment position="end">
+                            <IconButton
+                              aria-label="toggle password visibility"
+                              onClick={() => setShowPassword(!showPassword)}
+                              edge="end"
+                            >
+                              {showPassword ? <VisibilityOff /> : <Visibility />}
+                            </IconButton>
+                          </InputAdornment>
+                        ),
+                      }}
+                    />
+                    {passwordValue && (
+                      <Box sx={{ mt: 1 }}>
+                        <LinearProgress
+                          variant="determinate"
+                          value={Math.min(100, (passwordStrength / 4) * 100)}
+                          color={passwordStrength <= 1 ? 'error' : passwordStrength <= 3 ? 'warning' : 'success'}
+                          sx={{ height: 8, borderRadius: 1 }}
+                        />
+                        <Typography variant="caption" sx={{ mt: 0.5, display: 'block' }}
+                          color={passwordStrength <= 1 ? 'error.main' : passwordStrength <= 3 ? 'warning.main' : 'success.main'}
+                        >
+                          Strength: {passwordStrength <= 1 ? 'Weak' : passwordStrength <= 3 ? 'Medium' : 'Strong'}
+                        </Typography>
+                      </Box>
+                    )}
+                  </Box>
                 )}
               />
 
