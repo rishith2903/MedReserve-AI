@@ -2,11 +2,13 @@
 import axios from 'axios';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
+const RAW_TIMEOUT = import.meta.env.VITE_API_TIMEOUT;
+const API_TIMEOUT = Number.isFinite(Number(RAW_TIMEOUT)) ? Number(RAW_TIMEOUT) : 30000;
 
 // Create axios instance
 const api = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 30000, // Increased timeout for better UX
+  timeout: API_TIMEOUT,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -16,11 +18,13 @@ const api = axios.create({
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('authToken');
+    const url = config?.url || '';
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
-      console.log(`🔐 API Request to ${config.url} with token:`, token.substring(0, 20) + '...');
+      const short = `${token}...`;
+      console.log(`🔐 API Request to ${url} with token:`, short);
     } else {
-      console.log(`🚫 API Request to ${config.url} without token`);
+      console.log(`🚫 API Request to ${url} without token`);
     }
     return config;
   },
@@ -29,32 +33,105 @@ api.interceptors.request.use(
   }
 );
 
+// Token refresh state and helpers
+let isRefreshing = false;
+let refreshSubscribers = [];
+const onRefreshed = (newToken) => {
+  refreshSubscribers.forEach((cb) => cb(newToken));
+  refreshSubscribers = [];
+};
+const addRefreshSubscriber = (cb) => {
+  refreshSubscribers.push(cb);
+};
+
+// Use a bare axios call (no interceptors) to avoid loops when refreshing
+const refreshAccessToken = async () => {
+  const rt = localStorage.getItem('refreshToken');
+  if (!rt) throw new Error('Missing refresh token');
+  const resp = await axios.post(`${API_BASE_URL}/auth/refresh`, null, { params: { refreshToken: rt } });
+  return resp.data;
+};
+
 // Response interceptor for error handling
 api.interceptors.response.use(
   (response) => {
     return response;
   },
-  (error) => {
-    // Handle different types of errors
+  async (error) => {
+    const originalRequest = error.config || {};
+
+    // Handle timeout
     if (error.code === 'ECONNABORTED') {
       console.error('Request timeout - backend may be sleeping or unreachable');
       error.message = 'Connection timeout. The server may be starting up, please try again in a moment.';
-    } else if (error.response?.status === 401) {
-      // Unauthorized - clear token and redirect to login
-      console.error('401 Unauthorized - token may be expired or invalid');
-      localStorage.removeItem('authToken');
-      localStorage.removeItem('user');
-      localStorage.removeItem('refreshToken');
-      window.location.href = '/login';
-    } else if (error.response?.status === 403) {
+      return Promise.reject(error);
+    }
+
+    const status = error.response?.status;
+
+    // Attempt token refresh on 401 once
+    if (status === 401 && !originalRequest._retry) {
+      const hasRefresh = !!localStorage.getItem('refreshToken');
+      if (!hasRefresh) {
+        // No refresh token available, clear and redirect
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('user');
+        localStorage.removeItem('refreshToken');
+        localStorage.setItem('sessionMsg', 'Your session expired. Please sign in again.');
+        window.location.href = '/login';
+        return Promise.reject(error);
+      }
+
+      originalRequest._retry = true;
+
+      if (isRefreshing) {
+        return new Promise((resolve) => {
+          addRefreshSubscriber((newToken) => {
+            originalRequest.headers = originalRequest.headers || {};
+            originalRequest.headers.Authorization = `Bearer ${newToken}`;
+            resolve(api(originalRequest));
+          });
+        });
+      }
+
+      isRefreshing = true;
+      try {
+        const data = await refreshAccessToken();
+        const newToken = data?.accessToken;
+        if (!newToken) throw new Error('Invalid refresh response');
+        // Persist tokens
+        localStorage.setItem('authToken', newToken);
+        if (data.refreshToken) {
+          localStorage.setItem('refreshToken', data.refreshToken);
+        }
+        // Notify waiters
+        onRefreshed(newToken);
+        isRefreshing = false;
+        // Retry original request with new token
+        originalRequest.headers = originalRequest.headers || {};
+        originalRequest.headers.Authorization = `Bearer ${newToken}`;
+        return api(originalRequest);
+      } catch (refreshErr) {
+        isRefreshing = false;
+        // Refresh failed - clear and redirect to login
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('user');
+        localStorage.removeItem('refreshToken');
+        localStorage.setItem('sessionMsg', 'Your session expired. Please sign in again.');
+        window.location.href = '/login';
+        return Promise.reject(refreshErr);
+      }
+    }
+
+  if (status === 403) {
       // Forbidden - insufficient permissions
-      console.error('403 Forbidden - insufficient permissions:', error.response?.data);
-      console.error('Current token:', localStorage.getItem('authToken') ? 'Present' : 'Missing');
-      console.error('Current user:', localStorage.getItem('user'));
-    } else if (error.response?.status === 0 || error.message.includes('CORS')) {
+      const detail = error.response?.data?.message ?? error.response?.data ?? 'Forbidden';
+      console.error('403 Forbidden - insufficient permissions:', detail);
+    } else if (status === 0 || error.message?.includes('CORS')) {
       console.error('CORS error - frontend domain not allowed by backend');
       error.message = 'Connection error. Please check your network connection.';
     }
+
     return Promise.reject(error);
   }
 );
@@ -72,17 +149,23 @@ export const authAPI = {
   },
 
   logout: async () => {
-    const response = await api.post('/auth/logout');
+    const response = await api.post('/auth/signout');
     return response.data;
   },
 
   refreshToken: async () => {
-    const response = await api.post('/auth/refresh');
+    const refreshToken = localStorage.getItem('refreshToken');
+    const response = await api.post('/auth/refresh', null, { params: { refreshToken } });
     return response.data;
   },
 
   getCurrentUser: async () => {
     const response = await api.get('/auth/me');
+    return response.data;
+  },
+
+  changePassword: async ({ currentPassword, newPassword }) => {
+    const response = await api.post('/auth/change-password', { currentPassword, newPassword });
     return response.data;
   }
 };
@@ -167,7 +250,8 @@ export const appointmentsAPI = {
 // Medical Reports API
 export const medicalReportsAPI = {
   getAll: async (params = {}) => {
-    const response = await api.get('/medical-reports', { params });
+    // Backend endpoint returns a Page<MedicalReportResponse>
+    const response = await api.get('/medical-reports/my-reports', { params });
     return response.data;
   },
 
@@ -183,6 +267,20 @@ export const medicalReportsAPI = {
       },
     });
     return response.data;
+  },
+
+  download: async (id) => {
+    const response = await api.get(`/medical-reports/${id}/download`, {
+      responseType: 'blob'
+    });
+    // Try to extract filename from Content-Disposition
+    let filename = 'report';
+    const dispo = response.headers['content-disposition'] || response.headers['Content-Disposition'];
+    if (dispo) {
+      const match = /filename="?([^";]+)"?/i.exec(dispo);
+      if (match && match[1]) filename = match[1];
+    }
+    return { blob: response.data, filename };
   },
 
   delete: async (id) => {

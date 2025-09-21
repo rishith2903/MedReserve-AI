@@ -29,6 +29,7 @@
     "yup": "^1.6.1"
   },
   "devDependencies": {
+    "@playwright/test": "^1.48.0",
     "@vitest/coverage-v8": "^1.6.0",
     "@vitest/ui": "^1.6.0",
     "eslint": "^8.57.1",
@@ -54,7 +55,13 @@
     "test:coverage": "vitest run --coverage",
     "lint": "eslint src --ext .js,.jsx --report-unused-disable-directives",
     "lint:fix": "eslint src --ext .js,.jsx --fix",
-    "check-js-only": "node scripts/check-js-only.js"
+    "check-js-only": "node scripts/check-js-only.js",
+    "smoke:auth": "node scripts/smoke-auth.mjs",
+    "e2e": "playwright test",
+    "e2e:headed": "playwright test --headed",
+    "e2e:ui": "playwright test --ui",
+    "e2e:install": "playwright install",
+    "smoke:upload-rate": "node scripts/smoke-upload-rate.mjs"
   },
   "browserslist": {
     "production": [
