@@ -17,7 +17,8 @@ import {
   Alert,
   CircularProgress,
   Box,
-  Chip
+  Chip,
+  Skeleton
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -151,8 +152,8 @@ const RealTimeBooking = ({ open, onClose, doctorId, doctorName, onSuccess }) => 
 
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns}>
-      <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
-        <DialogTitle>
+      <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth aria-labelledby="booking-dialog-title">
+        <DialogTitle id="booking-dialog-title">
           Book Appointment with {doctorName}
         </DialogTitle>
         
@@ -204,8 +205,10 @@ const RealTimeBooking = ({ open, onClose, doctorId, doctorName, onSuccess }) => 
                 </Typography>
                 
                 {loadingSlots ? (
-                  <Box sx={{ display: 'flex', justifyContent: 'center', py: 2 }}>
-                    <CircularProgress size={24} />
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }} aria-label="Loading available time slots">
+                    {[...Array(8)].map((_, i) => (
+                      <Skeleton key={i} variant="rounded" width={80} height={32} />
+                    ))}
                   </Box>
                 ) : (
                   <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
@@ -222,6 +225,8 @@ const RealTimeBooking = ({ open, onClose, doctorId, doctorName, onSuccess }) => 
                           opacity: slot.available ? 1 : 0.5,
                           cursor: slot.available ? 'pointer' : 'not-allowed'
                         }}
+                        aria-label={slot.available ? `Select time ${slot.time}` : `Time ${slot.time} unavailable`}
+                        aria-pressed={formData.appointmentTime === slot.time}
                       />
                     ))}
                   </Box>
@@ -255,7 +260,7 @@ const RealTimeBooking = ({ open, onClose, doctorId, doctorName, onSuccess }) => 
         </DialogContent>
 
         <DialogActions>
-          <Button onClick={handleClose} disabled={loading}>
+          <Button onClick={handleClose} disabled={loading} aria-label="Cancel booking">
             Cancel
           </Button>
           <Button 
@@ -263,6 +268,7 @@ const RealTimeBooking = ({ open, onClose, doctorId, doctorName, onSuccess }) => 
             variant="contained" 
             disabled={loading || !formData.appointmentTime || success}
             startIcon={loading && <CircularProgress size={20} />}
+            aria-label="Confirm booking"
           >
             {loading ? 'Booking...' : 'Book Appointment'}
           </Button>

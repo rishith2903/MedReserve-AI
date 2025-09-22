@@ -46,6 +46,7 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { useAuth } from '../../contexts/AuthContext';
 import { appointmentsAPI, doctorsAPI } from '../../services/api';
+import useRealtimePoll from '../../hooks/useRealtimePoll';
 
 const BookAppointment = () => {
   const { doctorId } = useParams();
@@ -75,6 +76,13 @@ const BookAppointment = () => {
   useEffect(() => {
     fetchDoctorDetails();
   }, [doctorId]);
+
+  // Poll available slots every 60s when a date is selected
+  useRealtimePoll(() => {
+    if (selectedDate) {
+      return fetchAvailableSlotsFromApi(selectedDate);
+    }
+  }, 60000, [selectedDate, doctorId]);
 
   const fetchDoctorDetails = async () => {
     try {
@@ -124,42 +132,41 @@ const BookAppointment = () => {
     'Review & Confirm'
   ];
 
-  // Generate available time slots
-  const generateTimeSlots = () => {
-    const slots = [];
-    const startHour = 9; // 9 AM
-    const endHour = 17; // 5 PM
+  // Fetch available time slots from backend API
+  const fetchAvailableSlotsFromApi = async (dateObj) => {
+    try {
+      setLoadingSlots(true);
+      const dateParam = dateObj.toISOString().split('T')[0];
+      const apiSlots = await appointmentsAPI.getAvailableSlots(doctorId, dateParam);
 
-    for (let hour = startHour; hour < endHour; hour++) {
-      for (let minute = 0; minute < 60; minute += 30) {
-        const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
-        const displayTime = new Date(2024, 0, 1, hour, minute).toLocaleTimeString('en-US', {
+      // Normalize response: accept ["HH:MM", ...] or [{ time: "HH:MM", available: true }, ...]
+      const normalized = (apiSlots || []).map((slot) => {
+        const timeStr = typeof slot === 'string' ? slot : slot.time;
+        const available = typeof slot === 'string' ? true : slot.available !== false;
+        const [hourStr, minuteStr] = (timeStr || '').split(':');
+        const hour = parseInt(hourStr || '0', 10);
+        const minute = parseInt(minuteStr || '0', 10);
+        const display = new Date(2024, 0, 1, hour, minute).toLocaleTimeString('en-US', {
           hour: 'numeric',
           minute: '2-digit',
           hour12: true
         });
+        return { time: timeStr, display, available };
+      });
 
-        // Simulate some slots being unavailable
-        const isAvailable = Math.random() > 0.3;
-
-        slots.push({
-          time: timeString,
-          display: displayTime,
-          available: isAvailable
-        });
-      }
+      setAvailableSlots(normalized);
+    } catch (err) {
+      console.error('Error fetching available slots from API:', err);
+      setError('Failed to load available time slots');
+      setAvailableSlots([]);
+    } finally {
+      setLoadingSlots(false);
     }
-    return slots;
   };
 
   useEffect(() => {
     if (selectedDate) {
-      setLoadingSlots(true);
-      // Simulate API call delay
-      setTimeout(() => {
-        setAvailableSlots(generateTimeSlots());
-        setLoadingSlots(false);
-      }, 1000);
+      fetchAvailableSlotsFromApi(selectedDate);
     }
   }, [selectedDate]);
 

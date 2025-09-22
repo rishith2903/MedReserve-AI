@@ -17,6 +17,7 @@ import {
   Fab,
   Container,
 } from '@mui/material';
+import { Tooltip } from '@mui/material';
 import {
   Dashboard,
   People,
@@ -148,7 +149,7 @@ const TopNavLayout = () => {
           <Toolbar>
           {/* Logo and Title */}
           <Box sx={{ display: 'flex', alignItems: 'center', flexGrow: 1 }}>
-            <LocalHospital sx={{ mr: 2, color: 'white' }} />
+            <LocalHospital sx={{ mr: 2, color: 'primary.main' }} />
             <Typography variant="h6" component="div" sx={{ fontWeight: 600 }}>
               MedReserve AI
             </Typography>
@@ -158,29 +159,34 @@ const TopNavLayout = () => {
           {!isMobile && (
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mr: 2 }}>
               {navigationItems.slice(0, 6).map((item) => (
-                <Button
+                <Tooltip key={item.path} title={item.label} arrow>
+                  <Button
                   key={item.path}
                   color="inherit"
                   onClick={() => navigate(item.path)}
                   sx={{
                     minWidth: 'auto',
                     px: 2,
-                    backgroundColor: location.pathname === item.path ? 'rgba(255,255,255,0.1)' : 'transparent',
+                    backgroundColor: location.pathname === item.path ? (theme) => theme.palette.action.selected : 'transparent',
                     '&:hover': {
-                      backgroundColor: 'rgba(255,255,255,0.1)',
+                      backgroundColor: (theme) => theme.palette.action.hover,
                     },
                   }}
+                    aria-current={location.pathname === item.path ? 'page' : undefined}
                 >
                   {item.icon}
                   <Typography variant="body2" sx={{ ml: 1, display: { xs: 'none', lg: 'block' } }}>
                     {item.label}
                   </Typography>
-                </Button>
+                  </Button>
+                </Tooltip>
               ))}
               {navigationItems.length > 6 && (
-                <IconButton color="inherit" onClick={handleNavMenuOpen} aria-label="Open more navigation">
-                  <MoreVert />
-                </IconButton>
+                <Tooltip title="More navigation" arrow>
+                  <IconButton color="inherit" onClick={handleNavMenuOpen} aria-label="Open more navigation">
+                    <MoreVert />
+                  </IconButton>
+                </Tooltip>
               )}
             </Box>
           )}
@@ -189,26 +195,33 @@ const TopNavLayout = () => {
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             {/* Mobile Navigation Menu Button */}
             {isMobile && (
-              <IconButton color="inherit" onClick={handleNavMenuOpen} aria-label="Open navigation menu">
-                <MoreVert />
-              </IconButton>
+              <Tooltip title="Menu" arrow>
+                <IconButton color="inherit" onClick={handleNavMenuOpen} aria-label="Open navigation menu">
+                  <MoreVert />
+                </IconButton>
+              </Tooltip>
             )}
 
             {/* Theme Toggle */}
-            <IconButton color="inherit" onClick={toggleDarkMode}>
-              {isDarkMode ? <LightMode /> : <DarkMode />}
-            </IconButton>
+            <Tooltip title={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'} arrow>
+              <IconButton color="inherit" onClick={toggleDarkMode} aria-label={isDarkMode ? 'Activate light mode' : 'Activate dark mode'}>
+                {isDarkMode ? <LightMode /> : <DarkMode />}
+              </IconButton>
+            </Tooltip>
 
             {/* Notifications */}
-            <IconButton color="inherit" onClick={handleNotificationMenuOpen}>
-              <Badge badgeContent={3} color="error">
-                <Notifications />
-              </Badge>
-            </IconButton>
+            <Tooltip title="Notifications" arrow>
+              <IconButton color="inherit" onClick={handleNotificationMenuOpen} aria-label="Open notifications">
+                <Badge badgeContent={3} color="error">
+                  <Notifications />
+                </Badge>
+              </IconButton>
+            </Tooltip>
 
 
             {/* Profile Avatar */}
-            <IconButton onClick={handleProfileMenuOpen} sx={{ p: 0, ml: 1 }}>
+            <Tooltip title="Account" arrow>
+              <IconButton onClick={handleProfileMenuOpen} sx={{ p: 0, ml: 1 }} aria-label="Open account menu">
               <Avatar
                 alt={user?.firstName || 'User'}
                 src={user?.profilePicture}
@@ -216,7 +229,8 @@ const TopNavLayout = () => {
               >
                 {user?.firstName?.charAt(0) || 'U'}
               </Avatar>
-            </IconButton>
+              </IconButton>
+            </Tooltip>
           </Box>
         </Toolbar>
         </AppBar>
@@ -289,7 +303,8 @@ const TopNavLayout = () => {
 
         {/* Main Content */}
         <Toolbar />
-        <Container maxWidth="xl" sx={{ flexGrow: 1, py: 3 }}>
+        <Container component="main" id="main-content" maxWidth="xl" sx={{ flexGrow: 1, py: 3 }}>
+          <BreadcrumbsNav />
           <Outlet />
         </Container>
 

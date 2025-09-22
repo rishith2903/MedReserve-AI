@@ -12,6 +12,7 @@ import {
   Divider,
   Alert,
   CircularProgress,
+  Skeleton,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -37,6 +38,7 @@ import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { useAuth } from '../../contexts/AuthContext';
 import { appointmentsAPI } from '../../services/api';
 import realTimeDataService from '../../services/realTimeDataService';
+import useRealtimePoll from '../../hooks/useRealtimePoll';
 
 const MyAppointments = () => {
   const { user } = useAuth();
@@ -102,6 +104,10 @@ const MyAppointments = () => {
   useEffect(() => {
     fetchAppointments();
   }, []);
+
+  useRealtimePoll(async () => {
+    await fetchAppointments();
+  }, 60000, []);
 
   const fetchAppointments = async () => {
     setLoading(true);
@@ -208,8 +214,40 @@ const MyAppointments = () => {
 
   if (loading) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 400 }}>
-        <CircularProgress />
+      <Box>
+        <Box sx={{ mb: 4 }}>
+          <Skeleton width={260} height={40} sx={{ mb: 1 }} />
+          <Skeleton width={420} height={24} />
+        </Box>
+        <Grid container spacing={3}>
+          {[...Array(6)].map((_, i) => (
+            <Grid item xs={12} md={6} lg={4} key={i}>
+              <Card>
+                <CardContent sx={{ p: 3 }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
+                    <Skeleton width={100} height={28} />
+                    <Skeleton width={60} height={20} />
+                  </Box>
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                    <Skeleton variant="circular" width={40} height={40} sx={{ mr: 2 }} />
+                    <Box sx={{ flex: 1 }}>
+                      <Skeleton width="70%" height={24} />
+                      <Skeleton width="40%" height={20} />
+                    </Box>
+                  </Box>
+                  <Divider sx={{ my: 2 }} />
+                  <Skeleton width="60%" height={20} sx={{ mb: 1 }} />
+                  <Skeleton width="40%" height={20} sx={{ mb: 1 }} />
+                  <Skeleton width="50%" height={20} />
+                  <Box sx={{ mt: 3, display: 'flex', gap: 1 }}>
+                    <Skeleton width={120} height={36} />
+                    <Skeleton width={140} height={36} />
+                  </Box>
+                </CardContent>
+              </Card>
+            </Grid>
+          ))}
+        </Grid>
       </Box>
     );
   }

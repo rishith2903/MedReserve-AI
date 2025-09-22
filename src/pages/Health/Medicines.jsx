@@ -23,6 +23,7 @@ import {
   CircularProgress,
   LinearProgress,
   Divider,
+  Skeleton,
 } from '@mui/material';
 import {
   Medication,
@@ -39,6 +40,7 @@ import {
 import { useAuth } from '../../contexts/AuthContext';
 import { prescriptionsAPI } from '../../services/api';
 import realTimeDataService from '../../services/realTimeDataService';
+import useRealtimePoll from '../../hooks/useRealtimePoll';
 
 const Medicines = () => {
   const { user } = useAuth();
@@ -119,6 +121,10 @@ const Medicines = () => {
     fetchMedicines();
   }, []);
 
+  useRealtimePoll(async () => {
+    await fetchMedicines();
+  }, 60000, []);
+
   const fetchMedicines = async () => {
     try {
       setLoading(true);
@@ -174,8 +180,33 @@ const Medicines = () => {
 
   if (loading) {
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
-        <CircularProgress />
+      <Box>
+        <Box sx={{ mb: 4 }}>
+          <Skeleton width={220} height={40} sx={{ mb: 1 }} />
+          <Skeleton width={380} height={24} />
+        </Box>
+        <Grid container spacing={3}>
+          {[...Array(6)].map((_, i) => (
+            <Grid item xs={12} md={6} lg={4} key={i}>
+              <Card>
+                <CardContent>
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                    <Skeleton variant="circular" width={40} height={40} sx={{ mr: 2 }} />
+                    <Box sx={{ flexGrow: 1 }}>
+                      <Skeleton width="60%" height={24} />
+                      <Skeleton width="40%" height={20} />
+                    </Box>
+                    <Skeleton width={80} height={24} />
+                  </Box>
+                  <Skeleton width="80%" height={20} sx={{ mb: 1 }} />
+                  <Skeleton width="70%" height={20} sx={{ mb: 1 }} />
+                  <Skeleton width="90%" height={20} sx={{ mb: 2 }} />
+                  <Skeleton width="60%" height={16} />
+                </CardContent>
+              </Card>
+            </Grid>
+          ))}
+        </Grid>
       </Box>
     );
   }

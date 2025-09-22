@@ -20,7 +20,8 @@ import {
   CardHeader,
   LinearProgress,
   IconButton,
-  InputAdornment
+  InputAdornment,
+  Skeleton
 } from '@mui/material';
 import {
   Person,
@@ -36,6 +37,7 @@ import {
 } from '@mui/icons-material';
 import { useAuth } from '../../contexts/AuthContext';
 import api, { authAPI } from '../../services/api';
+import useRealtimePoll from '../../hooks/useRealtimePoll';
 import { validateIndianPhone, validationMessages, STRONG_PASSWORD_REGEX } from '../../utils/validation';
 import { normalizePayload } from '../../utils/normalize';
 import { useForm, Controller } from 'react-hook-form';
@@ -72,6 +74,14 @@ const Profile = () => {
       });
     }
   }, [user]);
+
+  // Poll current user data every 60s to keep profile fresh
+  useRealtimePoll(async () => {
+    try {
+      const fresh = await authAPI.getCurrentUser();
+      updateUser(fresh);
+    } catch (_) {}
+  }, 60000, [updateUser]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -197,10 +207,27 @@ const Profile = () => {
 
   if (!user) {
     return (
-      <Container maxWidth="md" sx={{ mt: 4 }}>
-        <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
-          <CircularProgress />
-        </Box>
+      <Container maxWidth="md" sx={{ mt: 4, mb: 4 }}>
+        <Card>
+          <CardHeader
+            avatar={<Skeleton variant="circular" width={80} height={80} />}
+            title={<Skeleton width={240} height={40} />}
+            subheader={<Skeleton width={180} height={24} />}
+          />
+          <CardContent>
+            <Grid container spacing={3}>
+              {[...Array(6)].map((_, i) => (
+                <Grid item xs={12} sm={6} key={i}>
+                  <Skeleton height={56} />
+                </Grid>
+              ))}
+              <Grid item xs={12}>
+                <Skeleton height={24} width={160} />
+                <Skeleton height={56} />
+              </Grid>
+            </Grid>
+          </CardContent>
+        </Card>
       </Container>
     );
   }
@@ -241,6 +268,7 @@ const Profile = () => {
                 variant="outlined"
                 startIcon={<Edit />}
                 onClick={() => setIsEditing(true)}
+                aria-label="Edit profile"
               >
                 Edit Profile
               </Button>
@@ -251,6 +279,7 @@ const Profile = () => {
                   startIcon={<Save />}
                   onClick={handleSave}
                   disabled={loading}
+                  aria-label="Save profile"
                 >
                   {loading ? <CircularProgress size={20} /> : 'Save'}
                 </Button>
@@ -259,6 +288,7 @@ const Profile = () => {
                   startIcon={<Cancel />}
                   onClick={handleCancel}
                   disabled={loading}
+                  aria-label="Cancel editing"
                 >
                   Cancel
                 </Button>

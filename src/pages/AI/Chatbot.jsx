@@ -21,6 +21,7 @@ import {
   useTheme,
   alpha,
 } from '@mui/material';
+import { Tooltip } from '@mui/material';
 import {
   Send,
   Chat,
@@ -137,9 +138,13 @@ const Chatbot = () => {
         confidence: response.confidence || 0.8
       };
     } catch (error) {
-      console.log('API call failed, using fallback response:', error);
-      // Fallback to local simulation if API fails
-      return await simulateChatbotResponse(message);
+      const demoMode = import.meta.env.VITE_DEMO_MODE === 'true';
+      const user = JSON.parse(localStorage.getItem('user') || 'null');
+      const isDemoUser = !!user && /@medreserve\.com$|@demo\./i.test(user.email || '');
+      if (demoMode && isDemoUser) {
+        return await simulateChatbotResponse(message);
+      }
+      throw error;
     }
   };
 
@@ -213,12 +218,16 @@ const Chatbot = () => {
             </Box>
           </Box>
           <Box sx={{ display: 'flex', gap: 1 }}>
-            <IconButton>
-              <Translate />
-            </IconButton>
-            <IconButton>
-              <Refresh />
-            </IconButton>
+            <Tooltip title="Language options" arrow>
+              <IconButton aria-label="Open language options">
+                <Translate />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Reset conversation" arrow>
+              <IconButton aria-label="Reset conversation">
+                <Refresh />
+              </IconButton>
+            </Tooltip>
           </Box>
         </Box>
       </Paper>
@@ -267,7 +276,7 @@ const Chatbot = () => {
       {/* Messages */}
       <Paper sx={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         <Box sx={{ flex: 1, overflow: 'auto', p: 2 }}>
-          <List sx={{ p: 0 }}>
+          <List sx={{ p: 0 }} aria-live="polite" aria-relevant="additions" aria-label="Chat messages">
             {messages.map((message) => (
               <ListItem
                 key={message.id}
@@ -339,10 +348,14 @@ const Chatbot = () => {
                 </ListItemAvatar>
                 <ListItemText
                   primary={
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <CircularProgress size={16} />
+                    <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 1 }}>
+                      <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5 }} aria-label="Assistant is typing">
+                        <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: 'text.secondary', animation: 'typingBlink 1s infinite ease-in-out' }} />
+                        <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: 'text.secondary', animation: 'typingBlink 1s 0.2s infinite ease-in-out' }} />
+                        <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: 'text.secondary', animation: 'typingBlink 1s 0.4s infinite ease-in-out' }} />
+                      </Box>
                       <Typography variant="body2" color="text.secondary">
-                        AI is thinking...
+                        AI is typing
                       </Typography>
                     </Box>
                   }
@@ -368,7 +381,8 @@ const Chatbot = () => {
               variant="outlined"
               size="small"
             />
-            <IconButton
+            <Tooltip title={loading ? 'Sending...' : 'Send message'} arrow>
+              <IconButton
               color="primary"
               onClick={handleSendMessage}
               disabled={loading || !inputMessage.trim()}
@@ -382,9 +396,11 @@ const Chatbot = () => {
                   bgcolor: theme.palette.grey[300],
                 }
               }}
+              aria-label="Send message"
             >
-              <Send />
-            </IconButton>
+                <Send />
+              </IconButton>
+            </Tooltip>
           </Box>
         </Box>
       </Paper>

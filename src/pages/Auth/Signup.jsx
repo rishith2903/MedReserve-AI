@@ -17,6 +17,7 @@ import {
   MenuItem,
   LinearProgress,
 } from '@mui/material';
+import { Tooltip } from '@mui/material';
 import {
   Visibility,
   VisibilityOff,
@@ -147,7 +148,7 @@ const Signup = () => {
       >
         {/* Logo and Title */}
         <Box sx={{ textAlign: 'center', mb: 4 }}>
-          <LocalHospital sx={{ fontSize: 60, color: 'primary.main', mb: 2 }} />
+          <LocalHospital sx={{ fontSize: 60, color: 'primary.main', mb: 2 }} aria-hidden />
           <Typography variant="h3" component="h1" gutterBottom sx={{ fontWeight: 600 }}>
             MedReserve AI
           </Typography>

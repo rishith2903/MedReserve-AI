@@ -60,6 +60,16 @@ export const ThemeProvider = ({ children }) => {
       body2: { lineHeight: 1.6 },
     },
     components: {
+      MuiIconButton: {
+        styleOverrides: {
+          root: {
+            '&:focus-visible': {
+              outline: `3px solid ${isDarkMode ? '#90CAF9' : '#1565C0'}`,
+              outlineOffset: 2,
+            },
+          },
+        },
+      },
       MuiAppBar: {
         styleOverrides: {
           root: {
@@ -91,6 +101,16 @@ export const ThemeProvider = ({ children }) => {
             textTransform: 'none',
             borderRadius: 8,
             padding: '8px 16px',
+            '&:focus-visible': {
+              outline: `2px solid ${isDarkMode ? '#90CAF9' : '#1565C0'}`,
+              outlineOffset: 2,
+            },
+          },
+        },
+      },
+      MuiLink: {
+        styleOverrides: {
+          root: {
             '&:focus-visible': {
               outline: `2px solid ${isDarkMode ? '#90CAF9' : '#1565C0'}`,
               outlineOffset: 2,

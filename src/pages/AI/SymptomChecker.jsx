@@ -25,7 +25,8 @@ import {
   ListItem,
   ListItemText,
   ListItemIcon,
-  Divider
+  Divider,
+  Skeleton
 } from '@mui/material';
 import {
   Psychology,
@@ -191,6 +192,7 @@ const SymptomChecker = () => {
                 placeholder="Describe your symptoms in detail... (e.g., I have high fever, body pain, and headache)"
                 variant="outlined"
                 sx={{ mb: 2 }}
+                inputProps={{ 'aria-label': 'Symptom description' }}
               />
 
               {/* Sample Symptoms */}
@@ -233,6 +235,7 @@ const SymptomChecker = () => {
                     onClick={handlePredict}
                     disabled={loading}
                     startIcon={loading ? <CircularProgress size={20} /> : <HealthAndSafety />}
+                    aria-label="Predict disease"
                   >
                     Predict
                   </Button>
@@ -244,6 +247,7 @@ const SymptomChecker = () => {
                     onClick={handleCompare}
                     disabled={loading}
                     startIcon={<CompareArrows />}
+                    aria-label="Compare models"
                   >
                     Compare
                   </Button>
@@ -255,6 +259,7 @@ const SymptomChecker = () => {
                     onClick={handleAnalyze}
                     disabled={loading}
                     startIcon={<Analytics />}
+                    aria-label="Analyze features"
                   >
                     Analyze
                   </Button>
@@ -286,9 +291,18 @@ const SymptomChecker = () => {
                 </Tabs>
               )}
 
+              {loading && (
+                <Box sx={{ mt: 2 }}>
+                  <Skeleton width={220} height={32} sx={{ mb: 1 }} />
+                  <Skeleton variant="rectangular" height={8} sx={{ borderRadius: 1, mb: 2 }} />
+                  <Skeleton width="60%" height={20} />
+                  <Skeleton width="40%" height={20} />
+                </Box>
+              )}
+
               {/* Prediction Results */}
               {activeTab === 0 && prediction && (
-                <Box sx={{ mt: 2 }}>
+                <Box sx={{ mt: 2 }} aria-live="polite" aria-relevant="additions text" aria-label="Prediction result">
                   <Alert
                     severity={getConfidenceColor(prediction.confidence)}
                     sx={{ mb: 2 }}
@@ -357,7 +371,7 @@ const SymptomChecker = () => {
 
               {/* Comparison Results */}
               {activeTab === 1 && comparison && (
-                <Box sx={{ mt: 2 }}>
+                <Box sx={{ mt: 2 }} aria-live="polite" aria-label="Model comparison results">
                   <Grid container spacing={2}>
                     {/* ML Prediction */}
                     <Grid item xs={12} sm={6}>
@@ -423,7 +437,7 @@ const SymptomChecker = () => {
 
               {/* Analysis Results */}
               {activeTab === 2 && analysis && (
-                <Box sx={{ mt: 2 }}>
+                <Box sx={{ mt: 2 }} aria-live="polite" aria-label="Analysis results">
                   <FormControl size="small" sx={{ mb: 2, minWidth: 120 }}>
                     <InputLabel>Analysis Type</InputLabel>
                     <Select

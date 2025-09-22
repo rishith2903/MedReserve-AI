@@ -21,9 +21,12 @@ import {
   Work,
 } from '@mui/icons-material';
 import { doctorsAPI } from '../../services/api';
+import { useNavigate } from 'react-router-dom';
+import useRealtimePoll from '../../hooks/useRealtimePoll';
 
 const DoctorDetail = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [doctor, setDoctor] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -31,6 +34,9 @@ const DoctorDetail = () => {
   useEffect(() => {
     fetchDoctorDetails();
   }, [id]);
+
+  // Poll doctor details every 60s
+  useRealtimePoll(fetchDoctorDetails, 60000, [id]);
 
   const fetchDoctorDetails = async () => {
     try {
@@ -174,6 +180,8 @@ const DoctorDetail = () => {
                   size="large"
                   startIcon={<CalendarToday />}
                   fullWidth
+                aria-label={`Book appointment with ${doctor.name}`}
+                onClick={() => navigate(`/book-appointment/${doctor.id}`)}
                 >
                   Book Appointment
                 </Button>

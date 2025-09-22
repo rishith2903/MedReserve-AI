@@ -423,6 +423,16 @@ export const healthTipsAPI = {
   getById: async (id) => {
     const response = await api.get(`/health-tips/${id}`);
     return response.data;
+  },
+
+  // Personalized endpoint if backend supports it; fallback to getAll
+  getPersonalized: async () => {
+    try {
+      const response = await api.get('/health-tips/personalized');
+      return response.data;
+    } catch (_) {
+      return await healthTipsAPI.getAll();
+    }
   }
 };
 

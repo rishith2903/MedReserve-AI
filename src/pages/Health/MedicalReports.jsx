@@ -20,6 +20,7 @@ import {
   MenuItem,
   Alert,
   CircularProgress,
+  Skeleton,
   Stack,
 } from '@mui/material';
 import {
@@ -36,6 +37,7 @@ import {
 import { useAuth } from '../../contexts/AuthContext';
 import { medicalReportsAPI } from '../../services/api';
 import realTimeDataService from '../../services/realTimeDataService';
+import useRealtimePoll from '../../hooks/useRealtimePoll';
 
 const REPORT_TYPES = [
   'OTHER',
@@ -106,6 +108,10 @@ const MedicalReports = () => {
   useEffect(() => {
     fetchReports();
   }, []);
+
+  useRealtimePoll(async () => {
+    await fetchReports();
+  }, 60000, []);
 
   const fetchReports = async () => {
     try {
@@ -216,8 +222,31 @@ const MedicalReports = () => {
 
   if (loading) {
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
-        <CircularProgress />
+      <Box>
+        <Box sx={{ mb: 4 }}>
+          <Skeleton width={260} height={40} sx={{ mb: 1 }} />
+          <Skeleton width={420} height={24} />
+        </Box>
+        <Grid container spacing={3}>
+          {[...Array(6)].map((_, i) => (
+            <Grid item xs={12} md={6} lg={4} key={i}>
+              <Card>
+                <CardContent>
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                    <Skeleton variant="circular" width={40} height={40} sx={{ mr: 2 }} />
+                    <Box sx={{ flexGrow: 1 }}>
+                      <Skeleton width="70%" height={24} />
+                      <Skeleton width="40%" height={20} />
+                    </Box>
+                  </Box>
+                  <Skeleton width="50%" height={20} sx={{ mb: 1 }} />
+                  <Skeleton width="30%" height={20} />
+                  <Skeleton width="60%" height={16} sx={{ mt: 2 }} />
+                </CardContent>
+              </Card>
+            </Grid>
+          ))}
+        </Grid>
       </Box>
     );
   }
@@ -331,25 +360,28 @@ const MedicalReports = () => {
 
                 <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                   <Box>
-                    <IconButton
+                  <IconButton
                       size="small"
                       onClick={() => handleDownload(report)}
-                      title="Download"
+                    title="Download"
+                    aria-label={`Download ${report.title}`}
                     >
                       <Download />
                     </IconButton>
                     <IconButton
                       size="small"
-                      title="View"
+                    title="View"
+                    aria-label={`View ${report.title}`}
                     >
                       <Visibility />
                     </IconButton>
                   </Box>
-                  <IconButton
+                <IconButton
                     size="small"
                     color="error"
                     onClick={() => handleDelete(report.id)}
-                    title="Delete"
+                  title="Delete"
+                  aria-label={`Delete ${report.title}`}
                   >
                     <Delete />
                   </IconButton>

@@ -32,6 +32,8 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { appointmentsAPI, doctorsAPI } from '../../services/api';
 import realTimeDataService from '../../services/realTimeDataService';
+import EmptyState from '../../components/EmptyState';
+import { Search } from '@mui/icons-material';
 
 const PatientDashboard = () => {
   const { user } = useAuth();
@@ -176,25 +178,35 @@ const PatientDashboard = () => {
     <Box sx={{ flexGrow: 1, p: 3, backgroundColor: 'background.default', minHeight: '100vh' }}>
       {/* Header */}
       <Paper sx={{ mb: 4, p: 3 }}>
-        <Typography variant="h5" gutterBottom sx={{ fontWeight: 700 }}>
-          Welcome back, {user?.firstName || 'Patient'}! 👋
-        </Typography>
-        <Typography variant="body2" color="text.secondary">
-          Your health journey continues here
-        </Typography>
-        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
-          {new Date().toLocaleDateString('en-US', {
-            weekday: 'long',
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-          })}
-        </Typography>
+        {loading ? (
+          <>
+            <Skeleton width={260} height={36} />
+            <Skeleton width={320} height={20} />
+            <Skeleton width={200} height={16} />
+          </>
+        ) : (
+          <>
+            <Typography variant="h5" gutterBottom sx={{ fontWeight: 700 }}>
+              Welcome back, {user?.firstName || 'Patient'}! 👋
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Your health journey continues here
+            </Typography>
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
+              {new Date().toLocaleDateString('en-US', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+              })}
+            </Typography>
+          </>
+        )}
       </Paper>
 
       {/* Health Metrics Cards */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
-        {healthMetrics.map((metric, index) => (
+        {(loading ? Array.from({ length: 4 }) : healthMetrics).map((metric, index) => (
           <Grid item xs={12} sm={6} md={3} key={index}>
             <Card variant="outlined" sx={{
               height: '100%',
@@ -205,35 +217,47 @@ const PatientDashboard = () => {
             }}>
               <CardContent>
                 <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                  <Avatar sx={{
-                    bgcolor: metric.color,
-                    mr: 2,
-                    width: 48,
-                    height: 48
-                  }}>
-                    {metric.icon}
-                  </Avatar>
+                  {loading ? (
+                    <Skeleton variant="circular" width={48} height={48} sx={{ mr: 2 }} />
+                  ) : (
+                    <Avatar sx={{ bgcolor: metric.color, mr: 2, width: 48, height: 48 }}>
+                      {metric.icon}
+                    </Avatar>
+                  )}
                   <Box sx={{ flex: 1 }}>
-                    <Typography variant="h4" sx={{ fontWeight: 700, color: metric.color }}>
-                      {loading ? <Skeleton width={60} /> : metric.value}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
-                      {metric.title}
-                    </Typography>
+                    {loading ? (
+                      <>
+                        <Skeleton width={60} height={36} />
+                        <Skeleton width={120} height={20} />
+                      </>
+                    ) : (
+                      <>
+                        <Typography variant="h4" sx={{ fontWeight: 700, color: metric.color }}>
+                          {metric.value}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
+                          {metric.title}
+                        </Typography>
+                      </>
+                    )}
                   </Box>
                 </Box>
-                <Chip
-                  label={metric.change}
-                  size="small"
-                  sx={{
-                    bgcolor: metric.changeType === 'positive' ? '#4caf5020' :
-                             metric.changeType === 'warning' ? '#ff980020' : '#2196f320',
-                    color: metric.changeType === 'positive' ? '#4caf50' :
-                           metric.changeType === 'warning' ? '#ff9800' : '#2196f3',
-                    fontWeight: 600,
-                    border: 'none'
-                  }}
-                />
+                {loading ? (
+                  <Skeleton width={160} height={24} />
+                ) : (
+                  <Chip
+                    label={metric.change}
+                    size="small"
+                    sx={{
+                      bgcolor: metric.changeType === 'positive' ? '#4caf5020' :
+                               metric.changeType === 'warning' ? '#ff980020' : '#2196f320',
+                      color: metric.changeType === 'positive' ? '#4caf50' :
+                             metric.changeType === 'warning' ? '#ff9800' : '#2196f3',
+                      fontWeight: 600,
+                      border: 'none'
+                    }}
+                  />
+                )}
               </CardContent>
             </Card>
           </Grid>
@@ -265,20 +289,32 @@ const PatientDashboard = () => {
                         }
                       }}
                       onClick={action.action}
+                      role="button"
+                      aria-label={action.title}
                     >
-                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                        <Avatar sx={{ bgcolor: action.color, mr: 2, width: 40, height: 40 }}>
-                          {action.icon}
-                        </Avatar>
-                        <Box>
-                          <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-                            {action.title}
-                          </Typography>
-                          <Typography variant="body2" color="text.secondary">
-                            {action.description}
-                          </Typography>
+                      {loading ? (
+                        <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                          <Skeleton variant="circular" width={40} height={40} sx={{ mr: 2 }} />
+                          <Box sx={{ flex: 1 }}>
+                            <Skeleton width={140} height={24} />
+                            <Skeleton width={220} height={18} />
+                          </Box>
                         </Box>
-                      </Box>
+                      ) : (
+                        <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                          <Avatar sx={{ bgcolor: action.color, mr: 2, width: 40, height: 40 }}>
+                            {action.icon}
+                          </Avatar>
+                          <Box>
+                            <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                              {action.title}
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary">
+                              {action.description}
+                            </Typography>
+                          </Box>
+                        </Box>
+                      )}
                     </Paper>
                   </Grid>
                 ))}
@@ -322,6 +358,17 @@ const PatientDashboard = () => {
                   </Grid>
                 ))}
               </Grid>
+              {!loading && vitalsData.length === 0 && (
+                <Box sx={{ mt: 2 }}>
+                  <EmptyState
+                    title="No vitals yet"
+                    description="Connect a device or add vitals to see them here."
+                    actionLabel="Find Doctors"
+                    onAction={() => navigate('/doctors')}
+                    icon={Search}
+                  />
+                </Box>
+              )}
             </CardContent>
           </Card>
         </Grid>

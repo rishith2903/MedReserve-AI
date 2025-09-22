@@ -18,3 +18,20 @@ html, body, #root {
   max-width: 100%;
   overflow-x: hidden;
 }
+
+/* Visually hidden until focused: skip link for keyboard users */
+.skip-link {
+  position: absolute;
+  left: -999px;
+  top: -999px;
+  background: #1976d2;
+  color: white;
+  padding: 8px 12px;
+  border-radius: 6px;
+  z-index: 2000;
+}
+
+.skip-link:focus {
+  left: 16px;
+  top: 16px;
+}

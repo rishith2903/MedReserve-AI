@@ -32,6 +32,7 @@ import {
   AccessTime,
 } from '@mui/icons-material';
 import { apiTester } from '../../utils/apiTester';
+import useRealtimePoll from '../../hooks/useRealtimePoll';
 
 const APIStatusDashboard = () => {
   const [testResults, setTestResults] = useState(null);
@@ -45,6 +46,13 @@ const APIStatusDashboard = () => {
       setLastUpdate(new Date());
     }
   }, []);
+
+  // Poll tests every 2 minutes when not already running
+  useRealtimePoll(async () => {
+    if (!isRunning) {
+      await runTests();
+    }
+  }, 120000, [isRunning]);
 
   const runTests = async () => {
     setIsRunning(true);
@@ -123,7 +131,7 @@ const APIStatusDashboard = () => {
             </Stack>
           }
           action={
-            <Button onClick={runTests} disabled={isRunning} variant="outlined" size="small" startIcon={<Refresh />}>
+            <Button onClick={runTests} disabled={isRunning} variant="outlined" size="small" startIcon={<Refresh />} aria-label="Run system tests">
               {isRunning ? 'Testing…' : 'Run Tests'}
             </Button>
           }
@@ -173,7 +181,7 @@ const APIStatusDashboard = () => {
                       {category.replace('_', ' ')}
                     </Typography>
                   </Stack>
-                  <Chip size="small" label={(result.status || 'pending').toUpperCase()} color={statusChipColor(result.status)} />
+                  <Chip size="small" label={(result.status || 'pending').toUpperCase()} color={statusChipColor(result.status)} aria-label={`Status ${result.status || 'pending'}`} />
                 </Stack>
 
                 <Stack spacing={0.75}>

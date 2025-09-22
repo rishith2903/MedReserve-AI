@@ -23,6 +23,7 @@ import {
   Refresh
 } from '@mui/icons-material';
 import { healthTipsAPI } from '../../services/api';
+import useRealtimePoll from '../../hooks/useRealtimePoll';
 
 const HealthTips = () => {
   const [tips, setTips] = useState([]);
@@ -32,6 +33,11 @@ const HealthTips = () => {
   useEffect(() => {
     fetchHealthTips();
   }, []);
+
+  // Refresh health tips every 60s
+  useRealtimePoll(async () => {
+    await fetchHealthTips();
+  }, 60000, []);
 
   const fetchHealthTips = async () => {
     try {
@@ -192,6 +198,7 @@ const HealthTips = () => {
           startIcon={loading ? <CircularProgress size={20} /> : <Refresh />}
           onClick={fetchHealthTips}
           disabled={loading}
+          aria-label="Refresh health tips"
         >
           Refresh Tips
         </Button>

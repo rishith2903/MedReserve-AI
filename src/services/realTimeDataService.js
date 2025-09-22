@@ -11,6 +11,7 @@ import {
   prescriptionsAPI, 
   healthTipsAPI 
 } from './api';
+import demoDataService from './demoDataService';
 
 class RealTimeDataService {
   constructor() {
@@ -82,6 +83,16 @@ class RealTimeDataService {
     }
 
     try {
+      // Demo gate: if DEMO_MODE and demo user, provide demo stream data
+      const demoMode = import.meta.env.VITE_DEMO_MODE === 'true';
+      const user = JSON.parse(localStorage.getItem('user') || 'null');
+      const isDemoUser = !!user && /@medreserve\.com$|@demo\./i.test(user.email || '');
+      if (demoMode && isDemoUser) {
+        const demo = demoDataService.getDoctors();
+        const transformedDoctors = this.transformDoctorsData(demo);
+        this.cache.set(cacheKey, transformedDoctors);
+        return transformedDoctors;
+      }
       console.log('🔄 Fetching doctors from API...');
 
       const operation = async () => {
@@ -134,17 +145,13 @@ class RealTimeDataService {
 
     } catch (error) {
       console.error('❌ All doctor API endpoints failed after retries:', error);
-
       // Return cached data if available
       if (this.cache.has(cacheKey)) {
         console.log('📦 Using cached doctors data');
         return this.cache.get(cacheKey);
       }
-
-      // Fallback to enhanced demo data
-      const fallbackData = this.getFallbackDoctors();
-      this.cache.set(cacheKey, fallbackData);
-      return fallbackData;
+      // No fallback demo data: return empty array for real-data-only mode
+      return [];
     }
   }
 
@@ -174,44 +181,8 @@ class RealTimeDataService {
   /**
    * Get fallback doctors data (enhanced demo data)
    */
-  getFallbackDoctors() {
-    console.log('🔄 Using enhanced fallback doctors data');
-    
-    const specialties = ['Cardiology', 'Dermatology', 'Neurology', 'Orthopedics', 'Pediatrics', 'Psychiatry', 'General Medicine', 'ENT', 'Gynecology', 'Ophthalmology', 'Endocrinology', 'Oncology'];
-    const firstNames = ['Sarah', 'Michael', 'Emily', 'David', 'Lisa', 'James', 'Maria', 'Robert', 'Jennifer', 'William', 'Jessica', 'Christopher', 'Amanda', 'Daniel', 'Ashley', 'Matthew', 'Stephanie', 'Anthony', 'Melissa', 'Mark'];
-    const lastNames = ['Johnson', 'Smith', 'Williams', 'Brown', 'Jones', 'Garcia', 'Miller', 'Davis', 'Rodriguez', 'Martinez', 'Hernandez', 'Lopez', 'Gonzalez', 'Wilson', 'Anderson', 'Thomas', 'Taylor', 'Moore', 'Jackson', 'Martin'];
-
-    const doctors = [];
-    let id = 1;
-
-    // Generate 5 doctors per specialty
-    specialties.forEach(specialty => {
-      for (let i = 0; i < 5; i++) {
-        const firstName = firstNames[Math.floor(Math.random() * firstNames.length)];
-        const lastName = lastNames[Math.floor(Math.random() * lastNames.length)];
-        
-        doctors.push({
-          id: id++,
-          name: `Dr. ${firstName} ${lastName}`,
-          specialty,
-          experience: Math.floor(Math.random() * 20) + 5,
-          rating: 4.0 + Math.random() * 1.0,
-          reviews: Math.floor(Math.random() * 200) + 50,
-          location: 'MedReserve Medical Center',
-          availability: Math.random() > 0.3 ? 'Available Today' : 'Available Tomorrow',
-          consultationFee: 100 + Math.floor(Math.random() * 200),
-          image: null,
-          isAvailable: Math.random() > 0.3,
-          qualification: 'MD',
-          biography: `Dr. ${firstName} ${lastName} is a highly experienced ${specialty.toLowerCase()} specialist with over ${Math.floor(Math.random() * 20) + 5} years of practice.`,
-          phone: '+1 (555) 123-4567',
-          email: `${firstName.toLowerCase()}.${lastName.toLowerCase()}@medreserve.com`
-        });
-      }
-    });
-
-    return doctors;
-  }
+  // Fallback demo data removed for real-data-only mode
+  getFallbackDoctors() { return []; }
 
   /**
    * Fetch appointments with fallback
@@ -219,17 +190,19 @@ class RealTimeDataService {
   async fetchAppointments() {
     try {
       console.log('🔄 Fetching appointments from API...');
-      const response = await appointmentsAPI.getMyAppointments();
-      const appointments = response.content || response.data || response || [];
-      
-      if (appointments.length === 0) {
-        return this.getFallbackAppointments();
+      const demoMode = import.meta.env.VITE_DEMO_MODE === 'true';
+      const user = JSON.parse(localStorage.getItem('user') || 'null');
+      const isDemoUser = !!user && /@medreserve\.com$|@demo\./i.test(user.email || '');
+      if (demoMode && isDemoUser) {
+        return this.transformAppointmentsData(demoDataService.getAppointments());
       }
-      
+      const response = await appointmentsAPI.getAll();
+      const appointments = response.content || response.data || response || [];
+
       return this.transformAppointmentsData(appointments);
     } catch (error) {
       console.error('❌ Appointments API failed:', error);
-      return this.getFallbackAppointments();
+      return [];
     }
   }
 
@@ -253,38 +226,7 @@ class RealTimeDataService {
   /**
    * Get fallback appointments
    */
-  getFallbackAppointments() {
-    console.log('🔄 Using fallback appointments data');
-    
-    const today = new Date();
-    const tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000);
-    const nextWeek = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
-
-    return [
-      {
-        id: 1,
-        doctorName: 'Dr. Sarah Johnson',
-        specialty: 'Cardiology',
-        date: tomorrow.toLocaleDateString(),
-        time: '10:00 AM',
-        status: 'CONFIRMED',
-        type: 'CONSULTATION',
-        location: 'MedReserve Medical Center',
-        notes: 'Regular cardiac checkup'
-      },
-      {
-        id: 2,
-        doctorName: 'Dr. Michael Chen',
-        specialty: 'Dermatology',
-        date: nextWeek.toLocaleDateString(),
-        time: '2:30 PM',
-        status: 'SCHEDULED',
-        type: 'FOLLOW_UP',
-        location: 'MedReserve Medical Center',
-        notes: 'Follow-up for skin condition'
-      }
-    ];
-  }
+  getFallbackAppointments() { return []; }
 
   /**
    * Fetch medical reports with fallback
@@ -292,17 +234,19 @@ class RealTimeDataService {
   async fetchMedicalReports() {
     try {
       console.log('🔄 Fetching medical reports from API...');
+      const demoMode = import.meta.env.VITE_DEMO_MODE === 'true';
+      const user = JSON.parse(localStorage.getItem('user') || 'null');
+      const isDemoUser = !!user && /@medreserve\.com$|@demo\./i.test(user.email || '');
+      if (demoMode && isDemoUser) {
+        return this.transformMedicalReportsData(demoDataService.getReports());
+      }
       const response = await medicalReportsAPI.getAll();
       const reports = response.content || response.data || response || [];
-      
-      if (reports.length === 0) {
-        return this.getFallbackMedicalReports();
-      }
-      
+
       return this.transformMedicalReportsData(reports);
     } catch (error) {
       console.error('❌ Medical reports API failed:', error);
-      return this.getFallbackMedicalReports();
+      return [];
     }
   }
 
@@ -325,32 +269,7 @@ class RealTimeDataService {
   /**
    * Get fallback medical reports
    */
-  getFallbackMedicalReports() {
-    console.log('🔄 Using fallback medical reports data');
-    
-    return [
-      {
-        id: 1,
-        title: 'Blood Test Results',
-        type: 'Lab Report',
-        date: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toLocaleDateString(),
-        doctor: 'Dr. Sarah Johnson',
-        status: 'Reviewed',
-        description: 'Complete blood count and metabolic panel results',
-        fileUrl: '#'
-      },
-      {
-        id: 2,
-        title: 'Chest X-Ray',
-        type: 'Imaging',
-        date: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toLocaleDateString(),
-        doctor: 'Dr. Michael Chen',
-        status: 'Reviewed',
-        description: 'Chest X-ray examination results',
-        fileUrl: '#'
-      }
-    ];
-  }
+  getFallbackMedicalReports() { return []; }
 
   /**
    * Fetch prescriptions with fallback
@@ -358,17 +277,19 @@ class RealTimeDataService {
   async fetchPrescriptions() {
     try {
       console.log('🔄 Fetching prescriptions from API...');
+      const demoMode = import.meta.env.VITE_DEMO_MODE === 'true';
+      const user = JSON.parse(localStorage.getItem('user') || 'null');
+      const isDemoUser = !!user && /@medreserve\.com$|@demo\./i.test(user.email || '');
+      if (demoMode && isDemoUser) {
+        return this.transformPrescriptionsData(demoDataService.getPrescriptions());
+      }
       const response = await prescriptionsAPI.getAll();
       const prescriptions = response.content || response.data || response || [];
-      
-      if (prescriptions.length === 0) {
-        return this.getFallbackPrescriptions();
-      }
-      
+
       return this.transformPrescriptionsData(prescriptions);
     } catch (error) {
       console.error('❌ Prescriptions API failed:', error);
-      return this.getFallbackPrescriptions();
+      return [];
     }
   }
 
@@ -403,44 +324,7 @@ class RealTimeDataService {
   /**
    * Get fallback prescriptions
    */
-  getFallbackPrescriptions() {
-    console.log('🔄 Using fallback prescriptions data');
-    
-    const today = new Date();
-    const startDate1 = new Date(today.getTime() - 10 * 24 * 60 * 60 * 1000);
-    const endDate1 = new Date(today.getTime() + 20 * 24 * 60 * 60 * 1000);
-    
-    return [
-      {
-        id: 1,
-        name: 'Lisinopril',
-        dosage: '10mg',
-        frequency: 'Once daily',
-        prescribedBy: 'Dr. Sarah Johnson',
-        startDate: startDate1.toLocaleDateString(),
-        endDate: endDate1.toLocaleDateString(),
-        status: 'Active',
-        instructions: 'Take with food in the morning',
-        remainingDays: 20,
-        totalDays: 30,
-        category: 'Cardiovascular'
-      },
-      {
-        id: 2,
-        name: 'Metformin',
-        dosage: '500mg',
-        frequency: 'Twice daily',
-        prescribedBy: 'Dr. Michael Chen',
-        startDate: startDate1.toLocaleDateString(),
-        endDate: endDate1.toLocaleDateString(),
-        status: 'Active',
-        instructions: 'Take with meals',
-        remainingDays: 20,
-        totalDays: 30,
-        category: 'Diabetes'
-      }
-    ];
-  }
+  getFallbackPrescriptions() { return []; }
 
   /**
    * Get dashboard metrics with real-time calculation
@@ -469,10 +353,10 @@ class RealTimeDataService {
     } catch (error) {
       console.error('❌ Dashboard metrics calculation failed:', error);
       return {
-        totalDoctors: 60,
-        availableDoctors: 45,
-        upcomingAppointments: 2,
-        totalAppointments: 5,
+        totalDoctors: 0,
+        availableDoctors: 0,
+        upcomingAppointments: 0,
+        totalAppointments: 0,
         lastUpdated: new Date().toISOString()
       };
     }

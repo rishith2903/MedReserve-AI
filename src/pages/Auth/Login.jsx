@@ -13,6 +13,7 @@ import {
   IconButton,
   Divider,
 } from '@mui/material';
+import { Tooltip } from '@mui/material';
 import {
   Visibility,
   VisibilityOff,
@@ -136,7 +137,7 @@ useEffect(() => {
       >
         {/* Logo and Title */}
         <Box sx={{ textAlign: 'center', mb: 4 }}>
-          <LocalHospital sx={{ fontSize: 60, color: 'primary.main', mb: 2 }} />
+          <LocalHospital sx={{ fontSize: 60, color: 'primary.main', mb: 2 }} aria-hidden />
           <Typography variant="h3" component="h1" gutterBottom sx={{ fontWeight: 600 }}>
             MedReserve AI
           </Typography>
@@ -256,7 +257,8 @@ useEffect(() => {
 
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
               {demoCredentials.map((cred) => (
-                <Button
+                <Tooltip key={cred.role} title={`Login as ${cred.role}`} arrow>
+                  <Button
                   key={cred.role}
                   variant="outlined"
                   color={cred.color}
@@ -266,7 +268,8 @@ useEffect(() => {
                   sx={{ justifyContent: 'space-between' }}
                 >
                   <span>Login as {cred.role}</span>
-                </Button>
+                  </Button>
+                </Tooltip>
               ))}
             </Box>
           </CardContent>

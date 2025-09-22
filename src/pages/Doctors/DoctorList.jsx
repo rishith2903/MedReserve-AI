@@ -16,7 +16,8 @@ import {
   MenuItem,
   Rating,
   Alert,
-  CircularProgress
+  CircularProgress,
+  Skeleton
 } from '@mui/material';
 import {
   Search,
@@ -26,6 +27,7 @@ import {
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import realTimeDataService from '../../services/realTimeDataService';
+import useRealtimePoll from '../../hooks/useRealtimePoll';
 
 const DoctorList = () => {
   const navigate = useNavigate();
@@ -51,6 +53,12 @@ const DoctorList = () => {
 
     return () => clearInterval(interval);
   }, []);
+
+  useRealtimePoll(async () => {
+    if (!loading && !isRefreshing) {
+      await handleRefresh();
+    }
+  }, 60000, [loading, isRefreshing]);
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
@@ -129,9 +137,32 @@ const DoctorList = () => {
       )}
 
       {loading && (
-        <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
-          <CircularProgress />
-        </Box>
+        <>
+          <Grid container spacing={3} sx={{ mb: 2 }}>
+            {[...Array(6)].map((_, i) => (
+              <Grid item xs={12} sm={6} md={4} key={i}>
+                <Card>
+                  <CardContent sx={{ p: 3 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                      <Skeleton variant="circular" width={60} height={60} sx={{ mr: 2 }} />
+                      <Box sx={{ flexGrow: 1 }}>
+                        <Skeleton width="60%" height={28} />
+                        <Skeleton width="40%" height={20} />
+                      </Box>
+                    </Box>
+                    <Skeleton width="80%" height={20} sx={{ mb: 1 }} />
+                    <Skeleton width="50%" height={20} sx={{ mb: 1 }} />
+                    <Skeleton width="70%" height={20} sx={{ mb: 2 }} />
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <Skeleton width={80} height={32} />
+                      <Skeleton width={90} height={36} />
+                    </Box>
+                  </CardContent>
+                </Card>
+              </Grid>
+            ))}
+          </Grid>
+        </>
       )}
 
       {/* Search and Filter */}
