@@ -38,7 +38,7 @@ const DoctorDetail = () => {
   // Poll doctor details every 60s
   useRealtimePoll(fetchDoctorDetails, 60000, [id]);
 
-  const fetchDoctorDetails = async () => {
+  async function fetchDoctorDetails() {
     try {
       setLoading(true);
       setError(null);
@@ -62,7 +62,7 @@ const DoctorDetail = () => {
         availability: response.isAvailable ? 'Available Today' : 'Not Available',
         image: response.profileImage || null,
         consultationFee: response.consultationFee || 100,
-        phone: response.user?.phoneNumber || '+1 (555) 123-4567',
+        phone: response.user?.phoneNumber || '+91 (555) 123-4567',
         email: response.user?.email || 'doctor@medreserve.com'
       };
 
@@ -91,7 +91,7 @@ const DoctorDetail = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }
 
 
   if (loading) {
@@ -153,24 +153,24 @@ const DoctorDetail = () => {
               <Box sx={{ textAlign: 'center' }}>
                 <Avatar
                   sx={{ width: 150, height: 150, mx: 'auto', mb: 2, bgcolor: 'primary.main' }}
-                  src={doctor.image}
+                  src={doctor?.image || undefined}
                 >
-                  {doctor.name.split(' ').map(n => n[0]).join('')}
+                  {(doctor?.name || 'U').split(' ').map(n => n[0]).join('')}
                 </Avatar>
                 <Typography variant="h4" gutterBottom sx={{ fontWeight: 600 }}>
-                  {doctor.name}
+                  {doctor?.name || 'Doctor'}
                 </Typography>
                 <Typography variant="h6" color="primary" gutterBottom>
-                  {doctor.specialty}
+                  {doctor?.specialty || 'Specialist'}
                 </Typography>
                 <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mb: 2 }}>
-                  <Rating value={doctor.rating} precision={0.1} readOnly />
+                  <Rating value={doctor?.rating ?? 0} precision={0.1} readOnly />
                   <Typography variant="body2" sx={{ ml: 1 }}>
-                    {doctor.rating} ({doctor.reviews} reviews)
+                    {doctor?.rating ?? 0} ({doctor?.reviews ?? 0} reviews)
                   </Typography>
                 </Box>
                 <Chip
-                  label={doctor.availability}
+                  label={doctor?.availability || 'Availability Unknown'}
                   color="success"
                   variant="outlined"
                   sx={{ mb: 2 }}
@@ -180,8 +180,8 @@ const DoctorDetail = () => {
                   size="large"
                   startIcon={<CalendarToday />}
                   fullWidth
-                aria-label={`Book appointment with ${doctor.name}`}
-                onClick={() => navigate(`/book-appointment/${doctor.id}`)}
+                aria-label={`Book appointment with ${doctor?.name || 'Doctor'}`}
+                onClick={() => navigate(`/book-appointment/${doctor?.id || id}`)}
                 >
                   Book Appointment
                 </Button>
@@ -190,10 +190,10 @@ const DoctorDetail = () => {
             
             <Grid item xs={12} md={8}>
               <Typography variant="h5" gutterBottom sx={{ fontWeight: 600 }}>
-                About Dr. {doctor.name.split(' ')[1]}
+                About Dr. {(doctor?.name || 'Doctor').split(' ')[1] || (doctor?.name || 'Doctor')}
               </Typography>
               <Typography variant="body1" paragraph>
-                {doctor.about}
+                {doctor?.about || 'Experienced healthcare professional dedicated to providing quality care.'}
               </Typography>
 
               <Box sx={{ mb: 3 }}>
@@ -203,19 +203,19 @@ const DoctorDetail = () => {
                 <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                   <Work sx={{ mr: 1, color: 'text.secondary' }} />
                   <Typography variant="body2">
-                    {doctor.experience} years of experience
+                    {doctor?.experience ?? 0} years of experience
                   </Typography>
                 </Box>
                 <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                   <School sx={{ mr: 1, color: 'text.secondary' }} />
                   <Typography variant="body2">
-                    {doctor.education}
+                    {doctor?.education || 'MD'}
                   </Typography>
                 </Box>
                 <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                   <LocationOn sx={{ mr: 1, color: 'text.secondary' }} />
                   <Typography variant="body2">
-                    {doctor.location}
+                    {doctor?.location || 'MedReserve Clinic'}
                   </Typography>
                 </Box>
               </Box>
@@ -225,7 +225,7 @@ const DoctorDetail = () => {
                   Services Offered
                 </Typography>
                 <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                  {doctor.services.map((service, index) => (
+                  {(doctor?.services || []).map((service, index) => (
                     <Chip
                       key={index}
                       label={service}

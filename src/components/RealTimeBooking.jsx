@@ -97,13 +97,35 @@ const RealTimeBooking = ({ open, onClose, doctorId, doctorName, onSuccess }) => 
       setLoading(true);
       setError(null);
 
+      // Build 'yyyy-MM-dd HH:mm' from selected date and time
+      const d = formData.appointmentDate;
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const dd = String(d.getDate()).padStart(2, '0');
+      const hhmm = formData.appointmentTime; // already HH:mm
+
+      // Map UI type to backend enum
+      const mapType = (t) => {
+        switch (t) {
+          case 'ONLINE':
+            return 'ONLINE';
+          case 'FOLLOW_UP':
+            return 'FOLLOW_UP';
+          case 'EMERGENCY':
+            return 'EMERGENCY';
+          case 'CONSULTATION':
+          default:
+            return 'IN_PERSON';
+        }
+      };
+
       const appointmentData = {
         doctorId: parseInt(doctorId),
-        appointmentDate: formData.appointmentDate.toISOString().split('T')[0],
-        appointmentTime: formData.appointmentTime,
-        appointmentType: formData.appointmentType,
+        appointmentDateTime: `${yyyy}-${mm}-${dd} ${hhmm}`,
+        appointmentType: mapType(formData.appointmentType),
         chiefComplaint: formData.chiefComplaint,
-        symptoms: formData.symptoms
+        symptoms: formData.symptoms,
+        durationMinutes: 30,
       };
 
       console.log('Booking appointment:', appointmentData);
@@ -240,7 +262,6 @@ const RealTimeBooking = ({ open, onClose, doctorId, doctorName, onSuccess }) => 
                   value={formData.chiefComplaint}
                   onChange={(e) => setFormData(prev => ({ ...prev, chiefComplaint: e.target.value }))}
                   placeholder="Brief description of your main concern"
-                  required
                 />
               </Grid>
 
@@ -252,7 +273,7 @@ const RealTimeBooking = ({ open, onClose, doctorId, doctorName, onSuccess }) => 
                   label="Symptoms (Optional)"
                   value={formData.symptoms}
                   onChange={(e) => setFormData(prev => ({ ...prev, symptoms: e.target.value }))}
-                  placeholder="Describe any symptoms you're experiencing"
+                  placeholder="Describe any symptoms you&apos;re experiencing"
                 />
               </Grid>
             </Grid>

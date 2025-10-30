@@ -301,9 +301,8 @@ const TopNavLayout = () => {
           </DialogActions>
         </Dialog>
 
-        {/* Main Content */}
-        <Toolbar />
-        <Container component="main" id="main-content" maxWidth="xl" sx={{ flexGrow: 1, py: 3 }}>
+        {/* Main Content (reduced top spacing) */}
+        <Container component="main" id="main-content" maxWidth="xl" sx={{ flexGrow: 1, py: 1 }}>
           <BreadcrumbsNav />
           <Outlet />
         </Container>

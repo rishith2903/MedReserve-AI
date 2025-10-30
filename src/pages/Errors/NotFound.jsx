@@ -12,7 +12,7 @@ const NotFound = () => {
           Page not found
         </Typography>
         <Typography variant="body1" color="text.secondary" sx={{ maxWidth: 560, mx: 'auto', mb: 4 }}>
-          The page you are looking for doesn’t exist or has been moved.
+          The page you are looking for doesn&apos;t exist or has been moved.
         </Typography>
         <Box display="flex" gap={2} justifyContent="center">
           <Button component={RouterLink} to="/dashboard" variant="contained">Back to Dashboard</Button>

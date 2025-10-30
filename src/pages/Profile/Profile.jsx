@@ -80,7 +80,7 @@ const Profile = () => {
     try {
       const fresh = await authAPI.getCurrentUser();
       updateUser(fresh);
-    } catch (_) {}
+    } catch (_) { void 0; }
   }, 60000, [updateUser]);
 
   const handleInputChange = (e) => {

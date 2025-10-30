@@ -340,7 +340,7 @@ const BookAppointment = () => {
                 <TextField
                   fullWidth
                   label="Symptoms (Optional)"
-                  placeholder="Describe any symptoms you're experiencing"
+                  placeholder="Describe any symptoms you&apos;re experiencing"
                   value={symptoms}
                   onChange={(e) => setSymptoms(e.target.value)}
                   multiline
@@ -363,7 +363,7 @@ const BookAppointment = () => {
                 <ListItem>
                   <ListItemText
                     primary="Doctor"
-                    secondary={`${doctor.name} - ${doctor.specialty}`}
+                    secondary={`${doctor?.name || 'Doctor'} - ${doctor?.specialty || 'Specialist'}`}
                   />
                 </ListItem>
                 <Divider />
@@ -402,7 +402,7 @@ const BookAppointment = () => {
                 <ListItem>
                   <ListItemText
                     primary="Consultation Fee"
-                    secondary={`$${doctor.consultationFee}`}
+                    secondary={`$${doctor?.consultationFee ?? 0}`}
                   />
                 </ListItem>
               </List>
@@ -444,6 +444,51 @@ const BookAppointment = () => {
             Back to Dashboard
           </Button>
         </Box>
+      </Box>
+    );
+  }
+
+  // Extra safety: if doctor details are still loading or absent, show a full-page skeleton
+  if (loadingDoctor || !doctor) {
+    return (
+      <Box>
+        <Box sx={{ mb: 4 }}>
+          <Button
+            startIcon={<ArrowBack />}
+            onClick={() => navigate('/doctors')}
+            sx={{ mb: 2 }}
+          >
+            Back to Doctors
+          </Button>
+
+          <Typography variant="h4" gutterBottom sx={{ fontWeight: 600 }}>
+            Book Appointment
+          </Typography>
+
+          <Card sx={{ mb: 3 }}>
+            <CardContent>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+                <Skeleton variant="circular" width={80} height={80} />
+                <Box sx={{ flex: 1 }}>
+                  <Skeleton variant="text" width={200} height={32} />
+                  <Skeleton variant="text" width={120} height={24} />
+                  <Box sx={{ display: 'flex', gap: 2, mt: 1 }}>
+                    <Skeleton variant="rounded" width={120} height={24} />
+                    <Skeleton variant="rounded" width={160} height={24} />
+                    <Skeleton variant="rounded" width={200} height={24} />
+                  </Box>
+                </Box>
+              </Box>
+            </CardContent>
+          </Card>
+        </Box>
+
+        <Card>
+          <CardContent sx={{ p: 4 }}>
+            <Skeleton variant="text" width={240} height={28} sx={{ mb: 2 }} />
+            <Skeleton variant="rounded" width="100%" height={180} />
+          </CardContent>
+        </Card>
       </Box>
     );
   }
@@ -546,4 +591,223 @@ const BookAppointment = () => {
   );
 };
 
-export default BookAppointment;
+// ----------------------------------------------
+// New, simplified booking flow (replaces above)
+// ----------------------------------------------
+
+import { Container } from '@mui/material';
+
+const NewBookAppointment = () => {
+  const { doctorId } = useParams();
+  const navigate = useNavigate();
+  const [doctor, setDoctor] = useState(null);
+  const [loadingDoctor, setLoadingDoctor] = useState(true);
+  const [error, setError] = useState(null);
+
+  const [date, setDate] = useState(null);
+  const [slots, setSlots] = useState([]);
+  const [loadingSlots, setLoadingSlots] = useState(false);
+  const [time, setTime] = useState('');
+  const [type, setType] = useState('CONSULTATION');
+  const [complaint, setComplaint] = useState('');
+  const [sym, setSym] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    void loadDoctor();
+  }, [doctorId]);
+
+  async function loadDoctor() {
+    try {
+      setLoadingDoctor(true);
+      const res = await doctorsAPI.getById(doctorId);
+      setDoctor({
+        id: res.id,
+        name: `Dr. ${res.user?.firstName || res.firstName || 'Unknown'} ${res.user?.lastName || res.lastName || 'Doctor'}`,
+        specialty: res.specialty || 'General Medicine',
+        image: res.profileImage || null,
+        consultationFee: res.consultationFee || 100,
+      });
+    } catch (e) {
+      setDoctor(null);
+      setError('Failed to load doctor details');
+    } finally {
+      setLoadingDoctor(false);
+    }
+  }
+
+  useEffect(() => {
+    if (!date) return;
+    void loadSlots(date);
+  }, [date, doctorId]);
+
+  async function loadSlots(d) {
+    try {
+      setLoadingSlots(true);
+      const dateParam = d.toISOString().split('T')[0];
+      const apiSlots = await appointmentsAPI.getAvailableSlots(doctorId, dateParam);
+      const normalized = (apiSlots || []).map((s) => {
+        const timeStr = typeof s === 'string' ? s : s.time;
+        const available = typeof s === 'string' ? true : s.available !== false;
+        const [hh, mm] = (timeStr || '').split(':');
+        const disp = new Date(2024, 0, 1, parseInt(hh || '0', 10), parseInt(mm || '0', 10))
+          .toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+        return { time: timeStr, display: disp, available };
+      });
+      setSlots(normalized);
+    } catch (e) {
+      setSlots([]);
+      setError('Failed to load available time slots');
+    } finally {
+      setLoadingSlots(false);
+    }
+  }
+
+  function mapType(t) {
+    switch (t) {
+      case 'ONLINE':
+        return 'ONLINE';
+      case 'FOLLOW_UP':
+        return 'FOLLOW_UP';
+      case 'EMERGENCY':
+        return 'EMERGENCY';
+      case 'CONSULTATION':
+      default:
+        return 'IN_PERSON';
+    }
+  }
+
+  async function submit() {
+    try {
+      setSubmitting(true);
+      setError(null);
+      if (!doctorId || !date || !time || !complaint) {
+        setError('Please select date, time, and enter chief complaint.');
+        return;
+      }
+      const yyyy = date.getFullYear();
+      const mm = String(date.getMonth() + 1).padStart(2, '0');
+      const dd = String(date.getDate()).padStart(2, '0');
+      const payload = {
+        doctorId: parseInt(doctorId, 10),
+        appointmentDateTime: `${yyyy}-${mm}-${dd} ${time}`,
+        appointmentType: mapType(type),
+        chiefComplaint: complaint,
+        symptoms: sym || '',
+        durationMinutes: 30,
+      };
+      await appointmentsAPI.book(payload);
+      navigate('/appointments');
+    } catch (e) {
+      setError(e?.response?.data?.message || 'Failed to book appointment. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <Container maxWidth="md" sx={{ py: 3 }}>
+      <Box sx={{ mb: 2 }}>
+        <Button startIcon={<ArrowBack />} onClick={() => navigate('/doctors')}>Back to Doctors</Button>
+      </Box>
+
+      <Typography variant="h4" sx={{ fontWeight: 600, mb: 2 }}>Book Appointment</Typography>
+
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>{error}</Alert>
+      )}
+
+      <Card sx={{ mb: 3 }}>
+        <CardContent>
+          {loadingDoctor ? (
+            <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+              <Skeleton variant="circular" width={64} height={64} />
+              <Box sx={{ flex: 1 }}>
+                <Skeleton variant="text" width={220} height={28} />
+                <Skeleton variant="text" width={140} height={22} />
+              </Box>
+            </Box>
+          ) : (
+            <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+              <Avatar sx={{ width: 64, height: 64, bgcolor: 'primary.main' }} src={doctor?.image || undefined}>
+                {(doctor?.name || 'U').split(' ').map(n => n[0]).join('')}
+              </Avatar>
+              <Box sx={{ flex: 1 }}>
+                <Typography variant="h6" sx={{ fontWeight: 600 }}>{doctor?.name || 'Doctor'}</Typography>
+                <Typography variant="body2" color="text.secondary">{doctor?.specialty || 'Specialist'}</Typography>
+              </Box>
+              <Chip label={`₹${doctor?.consultationFee ?? 0}`} />
+            </Box>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent>
+          <Grid container spacing={3}>
+            <Grid item xs={12} md={6}>
+              <LocalizationProvider dateAdapter={AdapterDateFns}>
+                <DatePicker
+                  label="Select Date"
+                  value={date}
+                  onChange={setDate}
+                  minDate={new Date()}
+                  slots={{ textField: TextField }}
+                  slotProps={{ textField: { fullWidth: true } }}
+                />
+              </LocalizationProvider>
+            </Grid>
+            <Grid item xs={12} md={6}>
+              {loadingSlots ? (
+                <Box sx={{ display: 'flex', justifyContent: 'center', py: 2 }}>
+                  <CircularProgress size={20} />
+                </Box>
+              ) : (
+                <Box>
+                  <Typography variant="subtitle2" sx={{ mb: 1 }}>Available Time Slots</Typography>
+                  <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                    {slots.map(s => (
+                      <Chip key={s.time} label={s.display}
+                        color={time === s.time ? 'primary' : 'default'}
+                        variant={s.available ? 'outlined' : 'filled'}
+                        disabled={!s.available}
+                        onClick={() => s.available && setTime(s.time)} />
+                    ))}
+                  </Box>
+                </Box>
+              )}
+            </Grid>
+
+            <Grid item xs={12} md={6}>
+              <FormControl fullWidth>
+                <InputLabel>Appointment Type</InputLabel>
+                <Select value={type} label="Appointment Type" onChange={(e) => setType(e.target.value)}>
+                  <MenuItem value="CONSULTATION">General Consultation</MenuItem>
+                  <MenuItem value="ONLINE">Online Consultation</MenuItem>
+                  <MenuItem value="FOLLOW_UP">Follow-up Visit</MenuItem>
+                  <MenuItem value="EMERGENCY">Emergency</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12}>
+              <TextField fullWidth required label="Chief Complaint" value={complaint} onChange={(e)=>setComplaint(e.target.value)} />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField fullWidth label="Symptoms (Optional)" value={sym} onChange={(e)=>setSym(e.target.value)} multiline rows={3} />
+            </Grid>
+            <Grid item xs={12}>
+              <Box sx={{ display: 'flex', gap: 1 }}>
+                <Button variant="outlined" onClick={()=>navigate('/doctors')}>Cancel</Button>
+                <Button variant="contained" onClick={submit} disabled={submitting || !date || !time || !complaint} startIcon={submitting && <CircularProgress size={16} />}>
+                  {submitting ? 'Booking…' : 'Book Appointment'}
+                </Button>
+              </Box>
+            </Grid>
+          </Grid>
+        </CardContent>
+      </Card>
+    </Container>
+  );
+};
+
+export default NewBookAppointment;

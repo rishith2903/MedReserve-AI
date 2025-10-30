@@ -9,7 +9,7 @@ const NotAuthorized = () => {
           Access Denied
         </Typography>
         <Typography variant="body1" color="text.secondary" align="center" sx={{ maxWidth: 560, mb: 3 }}>
-          You don't have permission to access this page. If you believe this is a mistake, please contact an administrator.
+          You don&apos;t have permission to access this page. If you believe this is a mistake, please contact an administrator.
         </Typography>
         <Button component={RouterLink} to="/dashboard" variant="contained" aria-label="Back to dashboard">
           Back to Dashboard
