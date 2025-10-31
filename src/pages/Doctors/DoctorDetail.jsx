@@ -164,9 +164,9 @@ const DoctorDetail = () => {
                   {doctor?.specialty || 'Specialist'}
                 </Typography>
                 <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mb: 2 }}>
-                  <Rating value={doctor?.rating ?? 0} precision={0.1} readOnly />
+                  <Rating value={Math.round(doctor?.rating ?? 0)} precision={1} readOnly />
                   <Typography variant="body2" sx={{ ml: 1 }}>
-                    {doctor?.rating ?? 0} ({doctor?.reviews ?? 0} reviews)
+                    {Math.round(doctor?.rating ?? 0)} ({doctor?.reviews ?? 0} reviews)
                   </Typography>
                 </Box>
                 <Chip

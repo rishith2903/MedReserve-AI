@@ -16,6 +16,7 @@ import {
   Chip,
   Alert,
   Paper,
+  Container,
   Stepper,
   Step,
   StepLabel,
@@ -31,6 +32,7 @@ import {
   Divider,
   useTheme,
   alpha,
+  Skeleton,
 } from '@mui/material';
 import {
   CalendarToday,
@@ -48,6 +50,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { appointmentsAPI, doctorsAPI } from '../../services/api';
 import useRealtimePoll from '../../hooks/useRealtimePoll';
 
+/* removed old wizard component */
 const BookAppointment = () => {
   const { doctorId } = useParams();
   const navigate = useNavigate();
@@ -595,7 +598,7 @@ const BookAppointment = () => {
 // New, simplified booking flow (replaces above)
 // ----------------------------------------------
 
-import { Container } from '@mui/material';
+ 
 
 const NewBookAppointment = () => {
   const { doctorId } = useParams();
@@ -685,9 +688,21 @@ const NewBookAppointment = () => {
         setError('Please select date, time, and enter chief complaint.');
         return;
       }
-      const yyyy = date.getFullYear();
-      const mm = String(date.getMonth() + 1).padStart(2, '0');
-      const dd = String(date.getDate()).padStart(2, '0');
+      // Enforce 09:00–21:00 window with 30-minute steps (latest start 20:30)
+      const [th, tm] = (time || '').split(':');
+      const hhNum = Number(th);
+      const mmNum = Number(tm);
+      const inRange = (hhNum > 9 || (hhNum === 9 && mmNum >= 0)) && (hhNum < 21 || (hhNum === 21 && mmNum === 0));
+      const latestStartOk = (hhNum < 21) && (hhNum < 20 || (hhNum === 20 && (mmNum === 0 || mmNum === 30)));
+      const stepOk = (mmNum % 30 === 0);
+      if (!inRange || !stepOk || !latestStartOk) {
+        setError('Please pick a time between 09:00 and 21:00, aligned to 30-minute steps (latest start 20:30).');
+        return;
+      }
+      const d = new Date(date);
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const dd = String(d.getDate()).padStart(2, '0');
       const payload = {
         doctorId: parseInt(doctorId, 10),
         appointmentDateTime: `${yyyy}-${mm}-${dd} ${time}`,
@@ -696,8 +711,11 @@ const NewBookAppointment = () => {
         symptoms: sym || '',
         durationMinutes: 30,
       };
-      await appointmentsAPI.book(payload);
-      navigate('/appointments');
+      const booked = await appointmentsAPI.book(payload);
+      try {
+        await appointmentsAPI.getAll({ page: 0, size: 10 });
+      } catch (_) {}
+      navigate('/appointments?refresh=1');
     } catch (e) {
       setError(e?.response?.data?.message || 'Failed to book appointment. Please try again.');
     } finally {
@@ -752,6 +770,7 @@ const NewBookAppointment = () => {
                   value={date}
                   onChange={setDate}
                   minDate={new Date()}
+                  enableAccessibleFieldDOMStructure={false}
                   slots={{ textField: TextField }}
                   slotProps={{ textField: { fullWidth: true } }}
                 />
@@ -766,13 +785,25 @@ const NewBookAppointment = () => {
                 <Box>
                   <Typography variant="subtitle2" sx={{ mb: 1 }}>Available Time Slots</Typography>
                   <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                    {slots.map(s => (
-                      <Chip key={s.time} label={s.display}
+                    {slots.map((s, idx) => (
+                      <Chip key={`${s.time}-${idx}`} label={s.display}
                         color={time === s.time ? 'primary' : 'default'}
                         variant={s.available ? 'outlined' : 'filled'}
                         disabled={!s.available}
                         onClick={() => s.available && setTime(s.time)} />
                     ))}
+                  </Box>
+                  <Box sx={{ mt: 2 }}>
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+                      Or pick a custom time
+                    </Typography>
+                    <TextField
+                      type="time"
+                      fullWidth
+                      value={time || ''}
+                      onChange={(e) => setTime(e.target.value)}
+                      inputProps={{ step: 1800, min: '09:00', max: '21:00' }}
+                    />
                   </Box>
                 </Box>
               )}
@@ -798,7 +829,7 @@ const NewBookAppointment = () => {
             <Grid item xs={12}>
               <Box sx={{ display: 'flex', gap: 1 }}>
                 <Button variant="outlined" onClick={()=>navigate('/doctors')}>Cancel</Button>
-                <Button variant="contained" onClick={submit} disabled={submitting || !date || !time || !complaint} startIcon={submitting && <CircularProgress size={16} />}>
+                <Button variant="contained" onClick={submit} disabled={submitting || !date || !time} startIcon={submitting && <CircularProgress size={16} />}>
                   {submitting ? 'Booking…' : 'Book Appointment'}
                 </Button>
               </Box>

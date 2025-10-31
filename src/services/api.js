@@ -223,12 +223,24 @@ export const appointmentsAPI = {
   },
 
   cancel: async (id, reason) => {
-    const response = await api.put(`/appointments/${id}/cancel`, { reason });
+    const response = await api.put(`/appointments/${id}/cancel`, null, {
+      params: { reason }
+    });
     return response.data;
   },
 
   reschedule: async (id, newDateTime) => {
-    const response = await api.put(`/appointments/${id}/reschedule`, { newDateTime });
+    // Format to 'yyyy-MM-dd HH:mm' to satisfy backend @DateTimeFormat
+    const d = new Date(newDateTime);
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    const hh = String(d.getHours()).padStart(2, '0');
+    const min = String(d.getMinutes()).padStart(2, '0');
+    const formatted = `${yyyy}-${mm}-${dd} ${hh}:${min}`;
+    const response = await api.put(`/appointments/${id}/reschedule`, null, {
+      params: { newDateTime: formatted }
+    });
     return response.data;
   },
 

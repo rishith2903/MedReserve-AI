@@ -285,9 +285,9 @@ const DoctorList = () => {
 
                 <Box sx={{ mb: 2 }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                    <Rating value={doctor.rating} precision={0.1} size="small" readOnly />
+                    <Rating value={Math.round((Number(doctor.rating ?? 0)) * 100) / 100} precision={0.1} size="small" readOnly />
                     <Typography variant="body2" sx={{ ml: 1 }}>
-                      {doctor.rating} ({doctor.reviews} reviews)
+                      {Number(doctor.rating ?? 0).toFixed(2)} ({doctor.reviews} reviews)
                     </Typography>
                   </Box>
                   
@@ -296,7 +296,7 @@ const DoctorList = () => {
                   </Typography>
 
                   <Typography variant="body2" color="primary" sx={{ mb: 1, fontWeight: 600 }}>
-                    ${doctor.consultationFee} consultation fee
+                    ₹{doctor.consultationFee} consultation fee
                   </Typography>
                   
                   <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
