@@ -1,0 +1,35 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+# Check for TypeScript files
+echo "🔍 Checking for TypeScript files..."
+
+# Find any .ts or .tsx files in src directory
+TS_FILES=$(find src -name "*.ts" -o -name "*.tsx" 2>/dev/null)
+
+if [ -n "$TS_FILES" ]; then
+  echo "❌ ERROR: TypeScript files detected!"
+  echo "This project uses JavaScript only. Please convert these files to .js/.jsx:"
+  echo "$TS_FILES"
+  echo ""
+  echo "📝 To convert:"
+  echo "  1. Rename .ts files to .js"
+  echo "  2. Rename .tsx files to .jsx"
+  echo "  3. Remove TypeScript syntax (types, interfaces, etc.)"
+  echo ""
+  exit 1
+fi
+
+# Check for tsconfig.json
+if [ -f "tsconfig.json" ]; then
+  echo "❌ ERROR: tsconfig.json found!"
+  echo "This project uses JavaScript only. Please remove tsconfig.json"
+  exit 1
+fi
+
+echo "✅ No TypeScript files detected. Proceeding with commit..."
+
+# Run linting
+npm run lint --silent
+
+echo "✅ Pre-commit checks passed!"

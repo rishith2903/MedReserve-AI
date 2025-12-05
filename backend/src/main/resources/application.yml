@@ -1,0 +1,179 @@
+spring:
+  application:
+    name: medreserve-backend
+
+  # Profile-specific configuration
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:default}
+
+  h2:
+    console:
+      enabled: ${H2_CONSOLE_ENABLED:true}
+      path: /h2-console
+
+  jpa:
+    hibernate:
+      ddl-auto: ${DDL_AUTO:update}
+    show-sql: ${SHOW_SQL:false}
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+  jackson:
+    serialization:
+      indent_output: true
+
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+
+  mail:
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+server:
+  port: ${PORT:8080}
+  error:
+    include-message: always
+  compression:
+    enabled: true
+    mime-types: text/html,text/xml,text/plain,text/css,text/javascript,application/javascript,application/json,application/xml
+    min-response-size: 1024
+
+# JWT Configuration
+jwt:
+  expiration: ${JWT_EXPIRATION:86400000}
+  refresh-expiration: ${JWT_REFRESH_EXPIRATION:604800000}
+
+security:
+  jwt:
+    secret: ${JWT_SECRET:gecLMhvVBk1Y2TpF22ns6mYNo7YpS0hL0H9TK6E2Zb9RUNTe1zz4N25q5+JSvdKaf99M2ta53M9/aN7PCFg2eg==}
+
+# External Services Configuration
+ml:
+  service:
+    url: ${ML_SERVICE_URL:https://medreserve-ml.onrender.com}
+
+chatbot:
+  service:
+    url: ${CHATBOT_SERVICE_URL:https://medreserve-chatbot.onrender.com}
+  # Multilingual Dialogflow Configuration
+  supported-languages:
+    - en
+    - hi
+    - te
+  default-language: en
+  debug-mode: ${CHATBOT_DEBUG_MODE:false}
+
+# HTTP client defaults (used by RestTemplate)
+http:
+  client:
+    connect-timeout-ms: ${HTTP_CLIENT_CONNECT_TIMEOUT_MS:5000}
+    read-timeout-ms: ${HTTP_CLIENT_READ_TIMEOUT_MS:10000}
+    max-total-connections: ${HTTP_CLIENT_MAX_TOTAL:200}
+    max-per-route-connections: ${HTTP_CLIENT_MAX_PER_ROUTE:50}
+
+disease:
+  prediction:
+    service:
+      url: ${DISEASE_PREDICTION_SERVICE_URL:http://localhost:8003}
+    fallback:
+      enabled: ${DISEASE_PREDICTION_FALLBACK_ENABLED:true}
+
+# CORS Configuration (legacy)
+cors:
+  allowed-origins: ${CORS_ALLOWED_ORIGINS:https://med-reserve-ai.vercel.app,https://rishith2903.github.io,http://localhost:3000,http://localhost:3001,http://localhost:5173}
+
+# App-level CORS configuration
+app:
+  cors:
+    allowed-origins: ${FRONTEND_ORIGINS:http://localhost:3000,https://med-reserve-ai.vercel.app}
+  auth:
+    auto-verify-signup: ${AUTO_VERIFY_SIGNUP:true}
+  security:
+    hsts-enabled: ${HSTS_ENABLED:false}
+    login:
+      # Maximum number of failed login attempts before temporary lockout
+      max-attempts: ${LOGIN_MAX_ATTEMPTS:5}
+      # Lockout window in milliseconds (default: 15 minutes)
+      lockout-ms: ${LOGIN_LOCKOUT_MS:900000}
+    ratelimit:
+      uploads:
+        # Max upload requests per minute per user
+        requests-per-minute: ${UPLOADS_REQUESTS_PER_MINUTE:10}
+    antivirus:
+      enabled: ${ANTIVIRUS_ENABLED:false}
+      host: ${ANTIVIRUS_HOST:127.0.0.1}
+      port: ${ANTIVIRUS_PORT:3310}
+      timeout-ms: ${ANTIVIRUS_TIMEOUT_MS:5000}
+      fail-open: ${ANTIVIRUS_FAIL_OPEN:true}
+
+logging:
+  level:
+    root: INFO
+    org.springframework.web: INFO
+    org.hibernate: WARN
+
+# Actuator configuration for dev/default
+management:
+  endpoints:
+    web:
+      base-path: /actuator
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always
+  health:
+    mail:
+      enabled: false
+
+resilience4j:
+  retry:
+    instances:
+      mlService:
+        max-attempts: 2
+        wait-duration: 200ms
+        enable-exponential-backoff: true
+        exponential-backoff-multiplier: 2.0
+        retry-exceptions:
+          - java.io.IOException
+          - org.springframework.web.client.ResourceAccessException
+      mlHealth:
+        max-attempts: 1
+      chatbotService:
+        max-attempts: 2
+        wait-duration: 200ms
+        enable-exponential-backoff: true
+        exponential-backoff-multiplier: 2.0
+        retry-exceptions:
+          - java.io.IOException
+          - org.springframework.web.client.ResourceAccessException
+  circuitbreaker:
+    instances:
+      mlService:
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 10s
+        sliding-window-type: COUNT_BASED
+        sliding-window-size: 10
+      mlHealth:
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 5s
+        sliding-window-type: COUNT_BASED
+        sliding-window-size: 5
+      chatbotService:
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 10s
+        sliding-window-type: COUNT_BASED
+        sliding-window-size: 10

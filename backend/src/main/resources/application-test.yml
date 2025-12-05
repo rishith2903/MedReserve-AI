@@ -1,0 +1,60 @@
+spring:
+  application:
+    name: medreserve-backend-test
+
+  datasource:
+    url: jdbc:h2:mem:testdb
+    username: sa
+    password: 
+    driver-class-name: org.h2.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true
+    open-in-view: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+
+  jackson:
+    serialization:
+      indent_output: true
+
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+
+server:
+  port: 8080
+  error:
+    include-message: always
+
+# JWT Configuration
+jwt:
+  secret: mySecretKey123456789012345678901234567890
+  expiration: 86400000
+  refresh-expiration: 604800000
+
+# ML Service Configuration (Test Mode)
+ml:
+  service:
+    url: http://unavailable:8001
+
+# Chatbot Service Configuration (Test Mode)
+chatbot:
+  service:
+    url: http://unavailable:5005
+
+logging:
+  level:
+    root: INFO
+    com.medreserve: DEBUG
+    org.springframework.web: DEBUG
+    org.hibernate: ERROR

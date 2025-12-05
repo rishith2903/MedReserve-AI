@@ -1,0 +1,61 @@
+services:
+  - type: web
+    name: medreserve-backend
+    env: java
+    buildCommand: mvn clean package -DskipTests
+    startCommand: java -jar target/medreserve-backend-0.0.1-SNAPSHOT.jar
+    plan: free
+    healthCheckPath: /actuator/health
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: production
+      - key: SERVER_PORT
+        value: 8080
+      - key: DB_URL
+        fromDatabase:
+          name: medreserve-db
+          property: connectionString
+      - key: DB_USERNAME
+        fromDatabase:
+          name: medreserve-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: medreserve-db
+          property: password
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRATION
+        value: 86400000
+      - key: JWT_REFRESH_EXPIRATION
+        value: 604800000
+      - key: FILE_UPLOAD_DIR
+        value: ./uploads
+      - key: MAIL_HOST
+        value: smtp.gmail.com
+      - key: MAIL_PORT
+        value: 587
+      - key: MAIL_USERNAME
+        sync: false
+      - key: MAIL_PASSWORD
+        sync: false
+      - key: ML_SERVICE_URL
+        value: https://medreserve-ml.onrender.com
+      - key: CHATBOT_SERVICE_URL
+        value: https://medreserve-chatbot.onrender.com
+      - key: LOG_LEVEL
+        value: INFO
+      - key: SECURITY_LOG_LEVEL
+        value: WARN
+      - key: LOG_FILE
+        value: logs/medreserve.log
+      - key: SHOW_SQL
+        value: false
+      - key: CORS_ALLOWED_ORIGINS
+        value: https://med-reserve-ai.vercel.app,https://*.vercel.app,https://rishith2903.github.io,http://localhost:3000,http://localhost:3001,http://localhost:5173,http://localhost:8080
+
+databases:
+  - name: medreserve-db
+    databaseName: medreserve
+    user: medreserve_user
+    plan: free
