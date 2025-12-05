@@ -1,0 +1,44 @@
+# Simple MedReserve ML Service Dockerfile
+# Optimized for quick deployment and minimal issues
+
+FROM python:3.11-slim
+
+# Set working directory
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    curl \
+    gcc \
+    g++ \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set environment variables
+ENV PYTHONPATH=/app
+ENV PYTHONUNBUFFERED=1
+ENV NLTK_DATA=/app/nltk_data
+ENV PORT=5001
+
+# Copy requirements and install dependencies
+COPY requirements-minimal.txt .
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r requirements-minimal.txt
+
+# Copy application code
+COPY . .
+
+# Create necessary directories
+RUN mkdir -p models dataset logs uploads nltk_data
+
+# Skip NLTK data and model training for simple deployment
+# This version uses rule-based predictions without complex dependencies
+
+# Expose port
+EXPOSE 5001
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD curl -f http://localhost:5001/health || exit 1
+
+# Start the simple Flask API directly
+CMD ["python", "api/simple_ml_api.py"]

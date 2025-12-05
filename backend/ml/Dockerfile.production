@@ -1,0 +1,89 @@
+# MedReserve AI ML Service - Production Optimized Dockerfile
+# Multi-stage build with security hardening and optimization
+
+# Build stage
+FROM python:3.11-slim as builder
+
+# Set working directory
+WORKDIR /app
+
+# Install build dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    g++ \
+    make \
+    libffi-dev \
+    libssl-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements
+COPY requirements-optimized.txt requirements.txt
+
+# Create virtual environment and install dependencies
+RUN python -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
+# Upgrade pip and install dependencies
+RUN pip install --no-cache-dir --upgrade pip setuptools wheel && \
+    pip install --no-cache-dir -r requirements.txt
+
+# Download NLTK data during build
+RUN python -c "import nltk; nltk.download('punkt', download_dir='/opt/nltk_data'); nltk.download('stopwords', download_dir='/opt/nltk_data'); nltk.download('wordnet', download_dir='/opt/nltk_data')" || true
+
+# Production stage
+FROM python:3.11-slim
+
+# Set metadata
+LABEL maintainer="MedReserve AI Team"
+LABEL version="1.0.0"
+LABEL description="MedReserve AI ML Service - Production"
+
+# Create non-root user for security
+RUN groupadd -r medreserve && useradd -r -g medreserve medreserve
+
+# Set working directory
+WORKDIR /app
+
+# Install runtime dependencies only
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean
+
+# Copy virtual environment from builder
+COPY --from=builder /opt/venv /opt/venv
+COPY --from=builder /opt/nltk_data /opt/nltk_data
+ENV PATH="/opt/venv/bin:$PATH"
+
+# Copy application code
+COPY --chown=medreserve:medreserve . .
+
+# Create necessary directories with proper permissions
+RUN mkdir -p models dataset logs uploads nltk_data && \
+    chown -R medreserve:medreserve /app && \
+    chmod -R 755 /app
+
+# Set environment variables
+ENV NLTK_DATA=/opt/nltk_data:/app/nltk_data
+ENV PYTHONPATH=/app
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PORT=5001
+ENV LOG_LEVEL=INFO
+
+# Make startup script executable
+RUN chmod +x start.py
+
+# Switch to non-root user
+USER medreserve
+
+# Expose port
+EXPOSE 5001
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD curl -f http://localhost:5001/health || exit 1
+
+# Use gunicorn for production
+CMD ["gunicorn", "--bind", "0.0.0.0:5001", "--workers", "2", "--threads", "4", "--timeout", "120", "--access-logfile", "-", "--error-logfile", "-", "--log-level", "info", "api.ml_api:app"]

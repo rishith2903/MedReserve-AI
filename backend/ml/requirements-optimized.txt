@@ -1,0 +1,41 @@
+# MedReserve AI ML Service - Optimized Dependencies
+# Production-ready requirements with version pinning for stability
+
+# Core Web Framework
+flask==3.0.0
+flask-cors==4.0.0
+gunicorn==21.2.0
+
+# Core ML and Data Science (optimized versions)
+numpy==1.24.3
+pandas==2.0.3
+scikit-learn==1.3.2
+scipy==1.11.4
+
+# NLP with minimal footprint
+nltk==3.8.1
+
+# Model Persistence
+joblib==1.3.2
+
+# Environment and Configuration
+python-dotenv==1.0.0
+
+# HTTP Requests (for health checks and external APIs)
+requests==2.31.0
+
+# Utilities
+tqdm==4.66.1
+
+# Logging
+loguru==0.7.2
+
+# Testing (dev only, but included for completeness)
+pytest==7.4.3
+pytest-flask==1.3.0
+
+# Security
+werkzeug==3.0.1
+
+# Performance
+psutil==5.9.6
