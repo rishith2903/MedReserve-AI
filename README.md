@@ -1,6 +1,4 @@
-<p align="center">
-  <img src="./screenshots/logo.png" alt="MedReserve AI Logo" width="120" />
-</p>
+
 
 <h1 align="center">🏥 MedReserve AI</h1>
 
