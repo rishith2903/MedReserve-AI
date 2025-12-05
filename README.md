@@ -207,9 +207,9 @@ The core differentiator is its **AI/ML integration**: a symptom-to-specializatio
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                              CLIENT LAYER                                    │
+│                              CLIENT LAYER                                   │
 │  ┌─────────────────────────────────────────────────────────────────────┐    │
-│  │                    React 19 + Vite Frontend                          │    │
+│  │                    React 19 + Vite Frontend                         │    │
 │  │   ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────────────┐    │    │
 │  │   │  Pages   │  │Components│  │  Hooks   │  │ Services (Axios) │    │    │
 │  │   └──────────┘  └──────────┘  └──────────┘  └──────────────────┘    │    │
@@ -218,9 +218,9 @@ The core differentiator is its **AI/ML integration**: a symptom-to-specializatio
                                      │ HTTPS/REST + WebSocket
                                      ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                              API GATEWAY                                     │
+│                              API GATEWAY                                    │
 │  ┌─────────────────────────────────────────────────────────────────────┐    │
-│  │              Spring Boot 3.2 Backend (Java 17)                       │    │
+│  │              Spring Boot 3.2 Backend (Java 17)                      │    │
 │  │   ┌────────────┐  ┌────────────┐  ┌────────────┐  ┌─────────────┐   │    │
 │  │   │ Controllers│  │  Services  │  │Repositories│  │  Security   │   │    │
 │  │   │  (REST)    │  │  (Logic)   │  │   (JPA)    │  │  (JWT/RBAC) │   │    │
@@ -230,7 +230,7 @@ The core differentiator is its **AI/ML integration**: a symptom-to-specializatio
                 │                                     │
                 ▼                                     ▼
 ┌───────────────────────────────┐     ┌───────────────────────────────────────┐
-│       DATABASE LAYER          │     │            AI/ML SERVICES              │
+│       DATABASE LAYER          │     │            AI/ML SERVICES             │
 │  ┌─────────────────────────┐  │     │  ┌─────────────────────────────────┐  │
 │  │    PostgreSQL 15        │  │     │  │     ML Service (FastAPI)        │  │
 │  │  ┌───────┐  ┌────────┐  │  │     │  │  ┌─────────────┐  ┌──────────┐  │  │
