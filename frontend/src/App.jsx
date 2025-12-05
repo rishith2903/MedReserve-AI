@@ -15,6 +15,7 @@ import NotAuthorized from './pages/Errors/NotAuthorized';
 import NotFound from './pages/Errors/NotFound';
 import { adminRoutes, adminRequiredRoles } from './routes/adminRoutes.jsx';
 import { protectedRoutes } from './routes/protectedRoutes.jsx';
+import LandingPage from './pages/Landing/LandingPage';
 
 // Create a client for React Query
 const queryClient = new QueryClient({
@@ -37,37 +38,37 @@ function App() {
             <Router>
               <Suspense fallback={<Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh"><CircularProgress /></Box>}>
                 <Routes>
-              {/* Public routes */}
-              <Route path="/login" element={<Login />} />
-              <Route path="/signup" element={<Signup />} />
+                  {/* Public routes */}
+                  <Route path="/" element={<LandingPage />} />
+                  <Route path="/login" element={<Login />} />
+                  <Route path="/signup" element={<Signup />} />
 
-              {/* Protected routes */}
-              <Route path="/" element={<ProtectedRoute><TopNavLayout /></ProtectedRoute>}>
-                <Route index element={<Navigate to="/dashboard" replace />} />
+                  {/* Protected routes with layout */}
+                  <Route element={<ProtectedRoute><TopNavLayout /></ProtectedRoute>}>
 
-                {protectedRoutes.map(({ path, element }) => (
-                  <Route key={path} path={path} element={element} />
-                ))}
+                    {protectedRoutes.map(({ path, element }) => (
+                      <Route key={path} path={path} element={element} />
+                    ))}
 
-                {/* Admin routes (restrict to ADMIN and MASTER_ADMIN) via centralized config */}
-                {adminRoutes.map(({ path, element }) => (
-                  <Route
-                    key={path}
-                    path={path}
-                    element={<ProtectedRoute requiredRoles={adminRequiredRoles}>{element}</ProtectedRoute>}
-                  />
-                ))}
-              </Route>
+                    {/* Admin routes (restrict to ADMIN and MASTER_ADMIN) via centralized config */}
+                    {adminRoutes.map(({ path, element }) => (
+                      <Route
+                        key={path}
+                        path={path}
+                        element={<ProtectedRoute requiredRoles={adminRequiredRoles}>{element}</ProtectedRoute>}
+                      />
+                    ))}
+                  </Route>
 
-              {/* Not authorized and 404 */}
-              <Route path="/not-authorized" element={<NotAuthorized />} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
+                  {/* Not authorized and 404 */}
+                  <Route path="/not-authorized" element={<NotAuthorized />} />
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
               </Suspense>
 
-            <DocumentTitle />
-            {/* Multilingual Chatbot Language Selector */}
-            <ChatbotLanguageSelector />
+              <DocumentTitle />
+              {/* Multilingual Chatbot Language Selector */}
+              <ChatbotLanguageSelector />
             </Router>
           </ErrorBoundary>
         </AuthProvider>
