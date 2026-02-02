@@ -47,6 +47,67 @@ The core differentiator is its **AI/ML integration**: a symptom-to-specializatio
 
 ---
 
+## 📊 Project Statistics
+
+<table>
+  <tr>
+    <td align="center">
+      <h3>65+</h3>
+      <sub>REST API Endpoints</sub>
+    </td>
+    <td align="center">
+      <h3>16</h3>
+      <sub>Controllers</sub>
+    </td>
+    <td align="center">
+      <h3>91</h3>
+      <sub>Java Classes</sub>
+    </td>
+    <td align="center">
+      <h3>74</h3>
+      <sub>React Components</sub>
+    </td>
+    <td align="center">
+      <h3>60+</h3>
+      <sub>Unit/Integration Tests</sub>
+    </td>
+  </tr>
+</table>
+
+### Codebase Breakdown
+
+| Category | Component | Count |
+|----------|-----------|-------|
+| **Backend** | REST Controllers | 16 |
+| | API Endpoints | 65+ |
+| | DTOs (Data Transfer Objects) | 25+ |
+| | Service Classes | 12+ |
+| | JPA Entities | 8+ |
+| | Test Files | 12 |
+| | Unit/Integration Tests | 60+ |
+| **Frontend** | React Components | 74 |
+| | Pages | 25+ |
+| | Custom Hooks | 4 |
+| | Context Providers | 2 |
+| **AI/ML** | Python Microservices | 2 |
+| | ML Models | 3 |
+| | API Endpoints | 10+ |
+
+### API Endpoints by Domain
+
+| Domain | Endpoints | Key Features |
+|--------|-----------|--------------|
+| 🔐 Authentication | 8 | Login, Signup, JWT Refresh, Password Change |
+| 📅 Appointments | 8 | Booking, Reschedule, Cancel, Doctor Slots |
+| 👨‍⚕️ Doctors | 12 | Search, Filter, Top-rated, Specialties |
+| 🏥 Disease Prediction | 6 | ML/DL Predict, Compare, Analyze |
+| 💬 Chat & Chatbot | 12 | Sessions, Messages, Webhook, Intents |
+| 📋 Medical Records | 6 | Reports, Prescriptions, Upload |
+| 🤖 AI Features | 5 | Symptom Analysis, Health Tips, Smart Features |
+| ⚙️ System | 8 | Health Checks, Debug, CORS, Config |
+
+---
+
 ## 🌐 Live Demo
 
 | Service | URL | Status |

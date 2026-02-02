@@ -1,5 +1,46 @@
 # MedReserve Backend – Hardening Phase 1
 
+## 📊 Codebase Metrics (Captured: 2026-02-02)
+
+| Metric | Count | Notes |
+|--------|-------|-------|
+| **REST Controllers** | 16 | All under `com.medreserve.controller` |
+| **API Endpoints** | 65+ | GET, POST, PUT, DELETE, PATCH mappings |
+| **Java Source Files** | 91 | Main application code |
+| **Test Classes** | 12 | Unit + Integration tests |
+| **Test Methods (@Test)** | 60+ | JUnit 5 test coverage |
+| **DTOs** | 25+ | Request/Response objects |
+| **JPA Entities** | 8+ | Database models |
+| **Config Classes** | 11 | Security, CORS, Cache, Rate-limiting, etc. |
+
+### API Endpoints by Controller
+
+| Controller | Endpoints | Types |
+|------------|-----------|-------|
+| AuthController | 8 | signin, login, signup, refresh, me, profile, change-password, signout |
+| AppointmentController | 8 | book, reschedule, cancel, get, patient-apts, doctor-apts, available-slots |
+| DoctorController | 12 | register, list, search, filter (fee/rating/exp), top-rated, specialties |
+| DiseasePredictionController | 6 | predict, predict/ml, predict/dl, compare, analyze, health |
+| ChatController | 10 | sessions, messages, mark-read, end, unread-count |
+| ChatbotController | 6 | chat, intents, health, webhook, webhook/test |
+| MedicalReportController | 4 | CRUD for reports |
+| PrescriptionController | 4 | CRUD for prescriptions |
+| MLController | 3 | ML integrations |
+| HealthController | 1 | /actuator/health |
+| Others (Debug, Test, CORS) | 5 | Development/testing endpoints |
+
+### Test Coverage by Area
+
+| Area | Test Files | Test Methods |
+|------|------------|--------------|
+| Controllers | 4 | 25+ |
+| Services | 3 | 15+ |
+| Security | 3 | 15+ |
+| Integration | 1 | 8+ |
+| Application | 1 | 1 |
+
+---
+
 Status: In progress
 Branch: chore/backend-hardening-phase1
 Date: 2025-09-21
