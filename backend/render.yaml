@@ -11,10 +11,18 @@ services:
         value: production
       - key: SERVER_PORT
         value: 8080
-      - key: DB_URL
+      - key: DB_HOST
         fromDatabase:
           name: medreserve-db
-          property: connectionString
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: medreserve-db
+          property: port
+      - key: DB_NAME
+        fromDatabase:
+          name: medreserve-db
+          property: database
       - key: DB_USERNAME
         fromDatabase:
           name: medreserve-db
@@ -23,6 +31,8 @@ services:
         fromDatabase:
           name: medreserve-db
           property: password
+      - key: FRONTEND_ORIGINS
+        value: https://med-reserve-ai.vercel.app,https://rishith2903.github.io,http://localhost:3000,http://localhost:5173
       - key: JWT_SECRET
         generateValue: true
       - key: JWT_EXPIRATION
